@@ -48,7 +48,7 @@ class TestClient:
         self.previous_raw_result = None
         self.previous_result = None
         self.verbose_return = verbose_return
-
+    
     @staticmethod
     def request_body_builder(method, parameters: List):
         return json.dumps({
@@ -182,83 +182,84 @@ class TestClient:
             return result['stack']
         result: List = result['stack'][0]
         return parse_single_item(result)
-
+    
+    @classmethod
+    def parse_params(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes]) -> Dict[str, str]:
+        type_param = type(param)
+        if type_param is UInt160:
+            return {
+                'type': 'Hash160',
+                'value': str(Hash160Str.from_UInt160(param)),
+            }
+        elif type_param is Hash160Str:
+            return {
+                'type': 'Hash160',
+                'value': str(param),
+            }
+        elif type_param is UInt256:
+            return {
+                'type': 'Hash256',
+                'value': str(Hash256Str.from_UInt256(param)),
+            }
+        elif type_param is Hash256Str:
+            return {
+                'type': 'Hash256',
+                'value': str(param),
+            }
+        elif type_param is PublicKeyStr:
+            return {
+                'type': 'PublicKey',
+                'value': str(param),
+            }
+        elif type_param is bool:
+            return {
+                'type': 'Boolean',
+                'value': param,
+            }
+        elif type_param is int:
+            return {
+                'type': 'Integer',
+                'value': str(param),
+            }
+        elif type_param is str:
+            return {
+                'type': 'String',
+                'value': param,
+            }
+        elif type_param is bytes:
+            # not the best way to judge, but maybe no better method
+            try:
+                return {
+                    'type': 'String',
+                    'value': param.decode(),
+                }
+            except UnicodeDecodeError:
+                return {
+                    'type': 'ByteArray',
+                    'value': base64.b64encode(param).decode()
+                }
+        elif type_param is list:
+            return {
+                'type': 'Array',
+                'value': [cls.parse_params(param_) for param_ in param]
+            }
+        elif type_param is dict:
+            return {
+                'type': 'Map',
+                'value': [{'key': cls.parse_params(k), 'value': cls.parse_params(v)} for k, v in param.items()]
+            }
+        elif param is None:
+            return {
+                'type': 'Any',
+            }
+        raise ValueError(f'Unable to handle param {param} with type {type_param}')
+    
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                        signers: List[Signer] = None, relay=True, do_not_raise_on_result=False,
-                                       with_print=True) -> Any:
+                                       with_print=True, session: str = None) -> Any:
         if self.with_print and with_print:
             print(f'invoke function {operation}')
-    
-        def parse_params(param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes]) -> Dict[str, str]:
-            type_param = type(param)
-            if type_param is UInt160:
-                return {
-                    'type': 'Hash160',
-                    'value': str(Hash160Str.from_UInt160(param)),
-                }
-            elif type_param is Hash160Str:
-                return {
-                    'type': 'Hash160',
-                    'value': str(param),
-                }
-            elif type_param is UInt256:
-                return {
-                    'type': 'Hash256',
-                    'value': str(Hash256Str.from_UInt256(param)),
-                }
-            elif type_param is Hash256Str:
-                return {
-                    'type': 'Hash256',
-                    'value': str(param),
-                }
-            elif type_param is PublicKeyStr:
-                return {
-                    'type': 'PublicKey',
-                    'value': str(param),
-                }
-            elif type_param is bool:
-                return {
-                    'type': 'Boolean',
-                    'value': param,
-                }
-            elif type_param is int:
-                return {
-                    'type': 'Integer',
-                    'value': str(param),
-                }
-            elif type_param is str:
-                return {
-                    'type': 'String',
-                    'value': param,
-                }
-            elif type_param is bytes:
-                # not the best way to judge, but maybe no better method
-                try:
-                    return {
-                        'type': 'String',
-                        'value': param.decode(),
-                    }
-                except UnicodeDecodeError:
-                    return {
-                        'type': 'ByteArray',
-                        'value': base64.b64encode(param).decode()
-                    }
-            elif type_param is list:
-                return {
-                    'type': 'Array',
-                    'value': [parse_params(param_) for param_ in param]
-                }
-            elif type_param is dict:
-                return {
-                    'type': 'Map',
-                    'value': [{'key': parse_params(k), 'value': parse_params(v)} for k, v in param.items()]
-                }
-            elif param is None:
-                return {
-                    'type': 'Any',
-                }
-            raise ValueError(f'Unable to handle param {param} with type {type_param}')
         
         if not params:
             params = []
@@ -267,28 +268,42 @@ class TestClient:
         parameters = [
             str(scripthash),
             operation,
-            list(map(lambda param: parse_params(param), params)),
+            list(map(lambda param: self.parse_params(param), params)),
             list(map(lambda signer: signer.to_dict(), signers)),
         ]
-        result = self.meta_rpc_method('invokefunction', parameters, relay=relay,
-                                      do_not_raise_on_result=do_not_raise_on_result)
+        if session:
+            result = self.meta_rpc_method(
+                'invokefunctionwithsession', [session, relay] + parameters, relay=False,
+                do_not_raise_on_result=do_not_raise_on_result)
+        else:
+            result = self.meta_rpc_method('invokefunction', parameters, relay=relay,
+                                          do_not_raise_on_result=do_not_raise_on_result)
         return result
-
+    
     def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160]] = None,
-                       signers: List[Signer] = None, relay=True, do_not_raise_on_result=False, with_print=True) -> Any:
+                       signers: List[Signer] = None, relay=True, do_not_raise_on_result=False, with_print=True,
+                       session: str = None) -> Any:
         return self.invokefunction_of_any_contract(self.contract_scripthash, operation, params,
-                                                   signers, relay=relay, do_not_raise_on_result=do_not_raise_on_result,
-                                                   with_print=with_print)
-
-    def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay=False) -> Any:
+                                                   signers=signers, relay=relay,
+                                                   do_not_raise_on_result=do_not_raise_on_result,
+                                                   with_print=with_print, session=session)
+    
+    def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay=False,
+                     session: str = None) -> Any:
         if type(script) is bytes:
             script: str = script.decode()
         if not signers:
             signers = [self.signer]
-        result = self.meta_rpc_method(
-            'invokescript',
-            [script, list(map(lambda signer: signer.to_dict(), signers))],
-            relay=relay)
+        if session:
+            result = self.meta_rpc_method(
+                'invokescriptwithsession',
+                [session, relay, script, list(map(lambda signer: signer.to_dict(), signers))],
+                relay=False)
+        else:
+            result = self.meta_rpc_method(
+                'invokescript',
+                [script, list(map(lambda signer: signer.to_dict(), signers))],
+                relay=relay)
         return result
     
     def sendfrom(self, asset_id: Hash160Str, from_address: str, to_address: str, value: int,
@@ -331,5 +346,20 @@ class TestClient:
     def get_gas_balance(self) -> int:
         return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
     
-    def get_rToken_balance(self, rToken_address: Hash160Str):
-        return self.invokefunction_of_any_contract(rToken_address, "balanceOf", [self.wallet_scripthash])
+    def get_token_balance(self, token_address: Hash160Str):
+        return self.invokefunction_of_any_contract(token_address, "balanceOf", [self.wallet_scripthash])
+
+    def new_snapshots_from_current_system(self, sessions: List[str]):
+        return self.meta_rpc_method("newsnapshotsfromcurrentsystem", sessions)
+    
+    def delete_snapshots(self, sessions: List[str]):
+        return self.meta_rpc_method("deletesnapshots", sessions)
+
+    def list_snapshots(self):
+        return self.meta_rpc_method("listsnapshots", [])
+
+    def rename_snapshot(self, old_name: str, new_name: str):
+        return self.meta_rpc_method("renamesnapshot", [old_name, new_name])
+
+    def copy_snapshot(self, old_name: str, new_name: str):
+        return self.meta_rpc_method("copysnapshot", [old_name, new_name])
