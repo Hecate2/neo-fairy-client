@@ -4,7 +4,7 @@ import json
 import requests
 from retry import retry
 
-from utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
+from neo_test_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
 from neo3.core.types import UInt160, UInt256
 from neo3.contracts import NeoToken, GasToken
 
@@ -20,13 +20,12 @@ request_timeout = None  # 20
 
 
 class TestClient:
-    def __init__(self, target_url: str, contract_scripthash: Hash160Str, wallet_scripthash: Hash160Str,
-                 wallet_address: str, wallet_path: str, wallet_password: str,
+    def __init__(self, target_url: str, contract_scripthash: Hash160Str,
+                 wallet_address: str, wallet_path: str, wallet_password: str, signer: Signer=None,
                  with_print=True, session=requests.Session(), verbose_return=False):
         """
 
         :param target_url: url to the rpc server affliated to neo-cli
-        :param wallet_scripthash: scripthash of your wallet
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
         :param wallet_path: 'wallets/dev.json'
         :param wallet_password: '12345678'
@@ -38,9 +37,10 @@ class TestClient:
         self.target_url = target_url
         self.contract_scripthash = contract_scripthash
         self.session = session
-        self.wallet_scripthash = wallet_scripthash
-        self.signer = Signer(wallet_scripthash)
         self.wallet_address = wallet_address
+        wallet_scripthash = Hash160Str.from_address(wallet_address)
+        self.wallet_scripthash = wallet_scripthash
+        self.signer = signer or Signer(wallet_scripthash)
         self.wallet_path = wallet_path
         self.wallet_password = wallet_password
         self.previous_post_data = None
@@ -349,10 +349,14 @@ class TestClient:
     def get_token_balance(self, token_address: Hash160Str):
         return self.invokefunction_of_any_contract(token_address, "balanceOf", [self.wallet_scripthash])
 
-    def new_snapshots_from_current_system(self, sessions: List[str]):
+    def new_snapshots_from_current_system(self, sessions: Union[List[str], str]):
+        if type(sessions) is str:
+            return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [sessions])
         return self.meta_rpc_method("newsnapshotsfromcurrentsystem", sessions)
     
-    def delete_snapshots(self, sessions: List[str]):
+    def delete_snapshots(self, sessions: Union[List[str], str]):
+        if type(sessions) is str:
+            return self.meta_rpc_method("deletesnapshots", [sessions])
         return self.meta_rpc_method("deletesnapshots", sessions)
 
     def list_snapshots(self):
