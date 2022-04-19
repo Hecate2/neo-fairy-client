@@ -367,3 +367,6 @@ class TestClient:
 
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
+    
+    def set_snapshot_timestamp(self, session: str, timestamp_ms: int):
+        return self.meta_rpc_method("setsnapshottimestamp", [session, timestamp_ms])
