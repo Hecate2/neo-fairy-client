@@ -370,3 +370,8 @@ class TestClient:
     
     def set_snapshot_timestamp(self, session: str, timestamp_ms: int):
         return self.meta_rpc_method("setsnapshottimestamp", [session, timestamp_ms])
+
+    def get_snapshot_timestamp(self, sessions: Union[List[str], str]):
+        if type(sessions) is str:
+            return self.meta_rpc_method("getsnapshottimestamp", [sessions])
+        return self.meta_rpc_method("getsnapshottimestamp", sessions)
