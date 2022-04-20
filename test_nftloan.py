@@ -34,6 +34,8 @@ client.invokefunction('putStorage', params=[0x02, 1], session=session)
 
 
 def query_all_registered_rental(external_token_id=1, internal_token_id=1):
+    with_print = client.with_print
+    client.with_print = False
     print(client.invokefunction('anyUpdate',
                                 params=[nef_file, manifest, 'listRegisteredRentalByToken', [test_nopht_d_hash]],
                                 session=session))
@@ -65,6 +67,7 @@ def query_all_registered_rental(external_token_id=1, internal_token_id=1):
     print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getRegisteredRentalByRenter',
                                                      [wallet_scripthash, anyupdate_short_safe_hash, internal_token_id]],
                                 session=session))
+    client.with_print = with_print
 
 
 print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental',
@@ -77,5 +80,6 @@ print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRe
 assert client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental',
                                                   [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True]],
                              do_not_raise_on_result=True, session=session) == FAULT_MESSAGE
+query_all_registered_rental()
 
 client.set_snapshot_timestamp(session, int((time.time() + 500) * 1000))
