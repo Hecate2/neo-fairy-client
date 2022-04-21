@@ -4,7 +4,7 @@ from math import ceil
 import time
 
 
-def gen_expiry_timestamp_and_str(days: int) -> Tuple[int, str]:
+def gen_timestamp_and_date_str_in_days(days: int) -> Tuple[int, str]:
     today = datetime.date.today()
     days_later = today + datetime.timedelta(days=days)
     days_later_ending_milisecond = (int(time.mktime(time.strptime(str(days_later), '%Y-%m-%d')) + 86400) * 1000 - 1)
@@ -12,7 +12,7 @@ def gen_expiry_timestamp_and_str(days: int) -> Tuple[int, str]:
     return days_later_ending_milisecond, days_later_date_str
 
 
-def gen_expiry_timestamp_and_str_in_seconds(seconds: int) -> Tuple[int, str]:
+def gen_timestamp_and_date_str_in_seconds(seconds: int) -> Tuple[int, str]:
     current_time = time.time()
     today = datetime.date.fromtimestamp(current_time)
     seconds_later = today + datetime.timedelta(seconds=seconds)
