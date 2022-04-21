@@ -1,5 +1,6 @@
 from typing import Tuple, List, Dict, Any, Union
 from enum import Enum
+from neo_test_client.utils.timers import gen_timestamp_and_date_str_in_seconds, gen_timestamp_and_date_str_in_days
 
 import base64
 import time
@@ -126,14 +127,14 @@ class WitnessScope(Enum):
 
 
 class Signer:
-    def __init__(self, account: Hash160Str, scopes: WitnessScope = WitnessScope.CalledByEntry,
+    def __init__(self, account: Union[Hash160Str, str], scopes: WitnessScope = WitnessScope.CalledByEntry,
                  allowedcontracts: List[Hash160Str] = None, allowedgroups: List[str] = None):
-        self.account: Hash160Str = account
+        self.account: Hash160Str = account if type(account) is Hash160Str else Hash160Str.from_address(account)
         self.scopes: WitnessScope = scopes
-        if allowedcontracts == None:
+        if allowedcontracts is None:
             allowedcontracts = []
         self.allowedcontracts = [str(allowedcontract) for allowedcontract in allowedcontracts]
-        if allowedgroups == None:
+        if allowedgroups is None:
             allowedgroups = []
         self.allowedgroups = allowedgroups
     
@@ -147,7 +148,7 @@ class Signer:
 
 
 if __name__ == '__main__':
-    print('30 days:', gen_expiry_timestamp_and_str(30))
-    print(' 0 days:', gen_expiry_timestamp_and_str(0))
+    print('30 days:', gen_timestamp_and_date_str_in_days(30))
+    print(' 0 days:', gen_timestamp_and_date_str_in_days(0))
     print('time now:', time.time() * 1000)
-    print(' 5 secs:', gen_expiry_timestamp_and_str_in_seconds(5))
+    print(' 5 secs:', gen_timestamp_and_date_str_in_seconds(5))

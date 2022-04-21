@@ -21,22 +21,24 @@ request_timeout = None  # 20
 
 class TestClient:
     def __init__(self, target_url: str, contract_scripthash: Hash160Str,
-                 wallet_address: str, wallet_path: str, wallet_password: str, signer: Signer=None,
-                 with_print=True, session=requests.Session(), verbose_return=False):
+                 wallet_address: str, wallet_path: str, wallet_password: str, signer: Signer = None,
+                 with_print=True, requests_session=requests.Session(), verbose_return=False,
+                 function_default_relay=True, script_default_relay=False,
+                 rpc_server_session: str = None):
         """
 
         :param target_url: url to the rpc server affliated to neo-cli
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
         :param wallet_path: 'wallets/dev.json'
         :param wallet_password: '12345678'
-        :param session: requests.Session
+        :param requests_session: requests.Session
         :param verbose_return: return result, raw_result, post_data.
             This is to avoid reading previous_result for concurrency safety.
             For concurrency, set verbose_return=True
         """
         self.target_url = target_url
         self.contract_scripthash = contract_scripthash
-        self.session = session
+        self.requests_session = requests_session
         self.wallet_address = wallet_address
         wallet_scripthash = Hash160Str.from_address(wallet_address)
         self.wallet_scripthash = wallet_scripthash
@@ -48,6 +50,9 @@ class TestClient:
         self.previous_raw_result = None
         self.previous_result = None
         self.verbose_return = verbose_return
+        self.function_default_relay = function_default_relay
+        self.script_default_relay = script_default_relay
+        self.rpc_server_session = rpc_server_session
     
     @staticmethod
     def request_body_builder(method, parameters: List):
@@ -73,10 +78,10 @@ class TestClient:
         return processed_struct
     
     @retry(RequestExceptions, tries=2, logger=None)
-    def meta_rpc_method(self, method: str, parameters: List, relay: bool = True, do_not_raise_on_result=False) -> Any:
+    def meta_rpc_method(self, method: str, parameters: List, relay: bool = None, do_not_raise_on_result=False) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
-        result = json.loads(self.session.post(self.target_url, post_data, timeout=request_timeout).text)
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=request_timeout).text)
         if 'error' in result:
             raise ValueError(result['error']['message'])
         if type(result['result']) is dict:
@@ -87,7 +92,7 @@ class TestClient:
                     print(post_data)
                     print(result)
                     raise ValueError(result['result']['exception'])
-            if relay:
+            if relay or (relay is None and self.function_default_relay):
                 if method in {'invokefunction', 'invokescript'} and 'tx' not in result['result']:
                     raise ValueError('No `tx` in response. '
                                      'Did you call `client.openwallet()` before `invokefunction`?')
@@ -139,6 +144,9 @@ class TestClient:
                         return [parse_single_item(i) for i in item]
                     else:
                         return {parse_single_item(i['value'][0]): parse_single_item(i['value'][1]) for i in item}
+                else:
+                    assert item == []
+                    return item
             _type = item['type']
             if _type == 'Any' and 'value' not in item:
                 return None
@@ -256,10 +264,14 @@ class TestClient:
     
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
-                                       signers: List[Signer] = None, relay=True, do_not_raise_on_result=False,
-                                       with_print=True, session: str = None) -> Any:
+                                       signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
+                                       with_print=True, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
         if self.with_print and with_print:
-            print(f'invoke function {operation}')
+            if rpc_server_session:
+                print(f'{rpc_server_session}::invokefunction {operation}')
+            else:
+                print(f'invokefunction {operation}')
         
         if not params:
             params = []
@@ -271,9 +283,10 @@ class TestClient:
             list(map(lambda param: self.parse_params(param), params)),
             list(map(lambda signer: signer.to_dict(), signers)),
         ]
-        if session:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        if rpc_server_session:
             result = self.meta_rpc_method(
-                'invokefunctionwithsession', [session, relay] + parameters, relay=False,
+                'invokefunctionwithsession', [rpc_server_session, relay or (relay is None and self.function_default_relay)] + parameters, relay=False,
                 do_not_raise_on_result=do_not_raise_on_result)
         else:
             result = self.meta_rpc_method('invokefunction', parameters, relay=relay,
@@ -281,23 +294,25 @@ class TestClient:
         return result
     
     def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160]] = None,
-                       signers: List[Signer] = None, relay=True, do_not_raise_on_result=False, with_print=True,
-                       session: str = None) -> Any:
+                       signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
+                       rpc_server_session: str = None) -> Any:
         return self.invokefunction_of_any_contract(self.contract_scripthash, operation, params,
-                                                   signers=signers, relay=relay,
+                                                   signers=signers, relay=relay or (relay is None and self.function_default_relay),
                                                    do_not_raise_on_result=do_not_raise_on_result,
-                                                   with_print=with_print, session=session)
+                                                   with_print=with_print, rpc_server_session=rpc_server_session)
     
-    def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay=False,
-                     session: str = None) -> Any:
+    def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay: bool = None,
+                     rpc_server_session: str = None) -> Any:
         if type(script) is bytes:
             script: str = script.decode()
         if not signers:
             signers = [self.signer]
-        if session:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        if rpc_server_session:
+            relay = relay or (relay is None and self.script_default_relay)
             result = self.meta_rpc_method(
                 'invokescriptwithsession',
-                [session, relay, script, list(map(lambda signer: signer.to_dict(), signers))],
+                [rpc_server_session, relay, script, list(map(lambda signer: signer.to_dict(), signers))],
                 relay=False)
         else:
             result = self.meta_rpc_method(
@@ -348,30 +363,34 @@ class TestClient:
     
     def get_token_balance(self, token_address: Hash160Str):
         return self.invokefunction_of_any_contract(token_address, "balanceOf", [self.wallet_scripthash])
-
-    def new_snapshots_from_current_system(self, sessions: Union[List[str], str]):
-        if type(sessions) is str:
-            return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [sessions])
-        return self.meta_rpc_method("newsnapshotsfromcurrentsystem", sessions)
     
-    def delete_snapshots(self, sessions: Union[List[str], str]):
-        if type(sessions) is str:
-            return self.meta_rpc_method("deletesnapshots", [sessions])
-        return self.meta_rpc_method("deletesnapshots", sessions)
-
+    def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
+        if type(rpc_server_sessions) is str:
+            return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [rpc_server_sessions])
+        if rpc_server_sessions is None:
+            if self.rpc_server_session:
+                return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [self.rpc_server_session])
+            raise ValueError('No RpcServer session assigned')
+        return self.meta_rpc_method("newsnapshotsfromcurrentsystem", rpc_server_sessions)
+    
+    def delete_snapshots(self, rpc_server_sessions: Union[List[str], str]):
+        if type(rpc_server_sessions) is str:
+            return self.meta_rpc_method("deletesnapshots", [rpc_server_sessions])
+        return self.meta_rpc_method("deletesnapshots", rpc_server_sessions)
+    
     def list_snapshots(self):
         return self.meta_rpc_method("listsnapshots", [])
-
+    
     def rename_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("renamesnapshot", [old_name, new_name])
-
+    
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
-    def set_snapshot_timestamp(self, session: str, timestamp_ms: int):
-        return self.meta_rpc_method("setsnapshottimestamp", [session, timestamp_ms])
-
-    def get_snapshot_timestamp(self, sessions: Union[List[str], str]):
-        if type(sessions) is str:
-            return self.meta_rpc_method("getsnapshottimestamp", [sessions])
-        return self.meta_rpc_method("getsnapshottimestamp", sessions)
+    def set_snapshot_timestamp(self, rpc_server_session: str, timestamp_ms: int):
+        return self.meta_rpc_method("setsnapshottimestamp", [rpc_server_session, timestamp_ms])
+    
+    def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str]):
+        if type(rpc_server_sessions) is str:
+            return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
+        return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
