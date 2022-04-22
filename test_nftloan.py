@@ -37,14 +37,15 @@ print('#### CHECKLIST BEFORE TEST')
 print(initial_lender_gas := lender_client.get_gas_balance())
 print(initial_borrower_gas := borrower_client.get_gas_balance())
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
-print('#### END CHECKLIST')
-
 print(lender_client.new_snapshots_from_current_system())
 print(lender_client.list_snapshots())
+print('#### END CHECKLIST')
+
 lender_client.invokefunction('putStorage', params=[0x02, 1])
 
 
-def query_all_registered_rental(client=lender_client, external_token_id=1, internal_token_id=1):
+def query_all_rental(client=lender_client, external_token_id=1, internal_token_id=1, timestamp: int = None):
+    print(f'client rpc session: {client.rpc_server_session}')
     with_print, function_default_relay = client.with_print, client.function_default_relay
     client.with_print, client.function_default_relay = False, False
     print('====listRegisteredRentalByToken')
@@ -65,31 +66,29 @@ def query_all_registered_rental(client=lender_client, external_token_id=1, inter
     print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRegisteredRentalByRenter', [wallet_scripthash, anyupdate_short_safe_hash]]))
     print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getRegisteredRentalByRenter', [wallet_scripthash, anyupdate_short_safe_hash, internal_token_id]]))
     print('====listRentalDeadlineByRenter')
+    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', []]))
     print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, test_nopht_d_hash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, test_nopht_d_hash, external_token_id]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, test_nopht_d_hash, external_token_id, borrower_scripthash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, anyupdate_short_safe_hash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, anyupdate_short_safe_hash, internal_token_id]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, anyupdate_short_safe_hash, internal_token_id, borrower_scripthash]]))
+    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, internal_token_id]]))
+    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByRenter', [wallet_scripthash, internal_token_id, borrower_scripthash]]))
+    if timestamp:
+        print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getRentalDeadlineByRenter', [wallet_scripthash, internal_token_id, borrower_scripthash, timestamp]]))
     print('====listRentalDeadlineByTenant')
+    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', []]))
     print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, test_nopht_d_hash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, test_nopht_d_hash, external_token_id]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, test_nopht_d_hash, external_token_id, wallet_scripthash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, anyupdate_short_safe_hash]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, anyupdate_short_safe_hash, internal_token_id]]))
-    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, anyupdate_short_safe_hash, internal_token_id, wallet_scripthash]]))
+    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, internal_token_id]]))
+    print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listRentalDeadlineByTenant', [borrower_scripthash, internal_token_id, wallet_scripthash]]))
+    if timestamp:
+        print(client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getRentalDeadlineByTenant', [borrower_scripthash, internal_token_id, wallet_scripthash, timestamp]]))
     client.with_print, client.function_default_relay = with_print, function_default_relay
 
 
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]]))
-query_all_registered_rental()
+query_all_rental()
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 32, 1, 10, 7, True]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, test_nopht_d_hash, 1, 10]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, anyupdate_short_safe_hash, 1, 3]]))
 assert lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True]], do_not_raise_on_result=True) == FAULT_MESSAGE
-query_all_registered_rental()
+query_all_rental()
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listExternalTokenInfo', [0]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listExternalTokenInfo', [1]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getExternalTokenInfo', [1]]))
@@ -107,9 +106,12 @@ borrower_client.rpc_server_session = rpc_session_correct_payback
 rental_period = 16000
 print(execution_timestamp := borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 15, 1, rental_period]]))
 assert execution_timestamp == borrow_timestamp
-print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance())
 # cannot borrow the same token from the same owner twice in a single block
 assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, test_nopht_d_hash, 1, rental_period]], do_not_raise_on_result=True)
+assert 15 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'balanceOf', [borrower_scripthash, 1]], relay=False)
+print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance())
+query_all_rental(client=borrower_client, timestamp=borrow_timestamp)
+
 borrow_timestamp2 = borrow_timestamp + 100
 borrower_client.set_snapshot_timestamp(borrow_timestamp2, rpc_session_correct_payback)
 assert borrow_timestamp2 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 30, test_nopht_d_hash, 1, rental_period - 100]])
@@ -120,4 +122,9 @@ assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_
 assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 56, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
 # we borrowed 15 tokens at borrow_timestamp and 30 tokens at borrow_timestamp2
 # both will expire at borrow_timestamp + rental_period
+assert 45 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'balanceOf', [borrower_scripthash, 1]], relay=False)
 print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance())
+query_all_rental(client=borrower_client, timestamp=borrow_timestamp2)
+
+payback_timestamp = borrow_timestamp + rental_period
+# borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, 56, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
