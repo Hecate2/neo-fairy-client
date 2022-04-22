@@ -12,6 +12,7 @@ wallet_password = '1'
 
 borrower_address = 'NaainHz563mJLsHRsPD4NrKjMEQGBXXJY9'
 borrower_scripthash = Hash160Str.from_address(borrower_address)
+borrower_wallet_path = 'user1.json'
 
 lender = Signer(wallet_scripthash, scopes=WitnessScope.Global)
 borrower = Signer(borrower_scripthash, scopes=WitnessScope.Global)
@@ -30,8 +31,13 @@ FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
 rpc_server_session = 'NophtD'
 lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
-borrower_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
+borrower_client = TestClient(target_url, anyupdate_short_safe_hash, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
 # client.openwallet()
+print('#### CHECKLIST BEFORE TEST')
+print(initial_lender_gas := lender_client.get_gas_balance())
+print(initial_borrower_gas := borrower_client.get_gas_balance())
+print(lender_client.delete_snapshots(lender_client.list_snapshots()))
+print('#### END CHECKLIST')
 
 print(lender_client.new_snapshots_from_current_system())
 print(lender_client.list_snapshots())
@@ -93,6 +99,25 @@ print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'lis
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getInternalTokenId', [test_nopht_d_hash, 1]]))
 
 borrow_timestamp, _ = gen_timestamp_and_date_str_in_seconds(0)
-lender_client.set_snapshot_timestamp(rpc_server_session, borrow_timestamp)
+lender_client.set_snapshot_timestamp(borrow_timestamp, rpc_server_session)
 
-print(borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, 1, 16000]]))
+rpc_session_correct_payback = rpc_server_session + " borrow"
+borrower_client.copy_snapshot(rpc_server_session, rpc_session_correct_payback)
+borrower_client.rpc_server_session = rpc_session_correct_payback
+rental_period = 16000
+print(execution_timestamp := borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 15, 1, rental_period]]))
+assert execution_timestamp == borrow_timestamp
+print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance())
+# cannot borrow the same token from the same owner twice in a single block
+assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, test_nopht_d_hash, 1, rental_period]], do_not_raise_on_result=True)
+borrow_timestamp2 = borrow_timestamp + 100
+borrower_client.set_snapshot_timestamp(borrow_timestamp2, rpc_session_correct_payback)
+assert borrow_timestamp2 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 30, test_nopht_d_hash, 1, rental_period - 100]])
+# cannot borrow an amount <= 0
+assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 0, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, -1, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
+# cannot borrow more than total supply
+assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 56, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
+# we borrowed 15 tokens at borrow_timestamp and 30 tokens at borrow_timestamp2
+# both will expire at borrow_timestamp + rental_period
+print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance())

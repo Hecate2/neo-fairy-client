@@ -355,14 +355,16 @@ class TestClient:
     def getwalletbalance(self, asset_id: Hash160Str) -> int:
         return int(self.meta_rpc_method('getwalletbalance', [asset_id.to_str()])['balance'])
     
-    def get_neo_balance(self) -> int:
-        return self.getwalletbalance(Hash160Str.from_UInt160(NeoToken().hash))
+    def get_neo_balance(self, with_print=False) -> int:
+        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(neo.hash), 'balanceOf', params=[self.wallet_scripthash], relay=False, with_print=with_print)
+        # return self.getwalletbalance(Hash160Str.from_UInt160(NeoToken().hash))
+
+    def get_gas_balance(self, with_print=False) -> int:
+        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(gas.hash), 'balanceOf', params=[self.wallet_scripthash], relay=False, with_print=with_print)
+        # return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
     
-    def get_gas_balance(self) -> int:
-        return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
-    
-    def get_token_balance(self, token_address: Hash160Str):
-        return self.invokefunction_of_any_contract(token_address, "balanceOf", [self.wallet_scripthash])
+    def get_token_balance(self, token_address: Hash160Str, with_print=False):
+        return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[self.wallet_scripthash], relay=False, with_print=with_print)
     
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
         if type(rpc_server_sessions) is str:
@@ -370,7 +372,7 @@ class TestClient:
         if rpc_server_sessions is None:
             if self.rpc_server_session:
                 return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [self.rpc_server_session])
-            raise ValueError('No RpcServer session assigned')
+            raise ValueError('No RpcServer session specified')
         return self.meta_rpc_method("newsnapshotsfromcurrentsystem", rpc_server_sessions)
     
     def delete_snapshots(self, rpc_server_sessions: Union[List[str], str]):
@@ -387,7 +389,11 @@ class TestClient:
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
-    def set_snapshot_timestamp(self, rpc_server_session: str, timestamp_ms: int):
+    def set_snapshot_timestamp(self, timestamp_ms: int, rpc_server_session: str = None):
+        if rpc_server_session is None:
+            if self.rpc_server_session is None:
+                raise ValueError('No RpcServer session specified')
+            rpc_server_session = self.rpc_server_session
         return self.meta_rpc_method("setsnapshottimestamp", [rpc_server_session, timestamp_ms])
     
     def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str]):
