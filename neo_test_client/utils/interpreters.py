@@ -4,7 +4,7 @@ import base64
 from neo_test_client.utils.types import Hash160Str, UInt160
 
 
-class ResultInterpreter:
+class Interpreter:
     @staticmethod
     def bytes_to_int(bytes_: bytes):
         return int.from_bytes(bytes_, byteorder='little', signed=False)
@@ -23,7 +23,7 @@ class ResultInterpreter:
             return int_.to_bytes(bytes_needed + 1, 'little')
 
     
-class ClientResultInterpreter(ResultInterpreter):
+class ClientInterpreter(Interpreter):
     @staticmethod
     def interpret_raw_result_as_iterator(result):
         return result['result']['stack'][0]['iterator']

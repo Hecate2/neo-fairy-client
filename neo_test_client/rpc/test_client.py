@@ -355,16 +355,16 @@ class TestClient:
     def getwalletbalance(self, asset_id: Hash160Str) -> int:
         return int(self.meta_rpc_method('getwalletbalance', [asset_id.to_str()])['balance'])
     
-    def get_neo_balance(self, with_print=False) -> int:
-        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(neo.hash), 'balanceOf', params=[self.wallet_scripthash], relay=False, with_print=with_print)
+    def get_neo_balance(self, owner: Hash160Str = None, with_print=False) -> int:
+        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(neo.hash), 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(NeoToken().hash))
 
-    def get_gas_balance(self, with_print=False) -> int:
-        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(gas.hash), 'balanceOf', params=[self.wallet_scripthash], relay=False, with_print=with_print)
+    def get_gas_balance(self, owner: Hash160Str = None, with_print=False) -> int:
+        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(gas.hash), 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
     
-    def get_token_balance(self, token_address: Hash160Str, with_print=False):
-        return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[self.wallet_scripthash], relay=False, with_print=with_print)
+    def get_token_balance(self, token_address: Hash160Str, owner: Hash160Str = None, with_print=False):
+        return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
     
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
         if type(rpc_server_sessions) is str:
