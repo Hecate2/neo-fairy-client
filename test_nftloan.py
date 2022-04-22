@@ -30,7 +30,7 @@ FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
 rpc_server_session = 'NophtD'
 lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
-borrower_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
+borrower_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
 # client.openwallet()
 
 print(lender_client.new_snapshots_from_current_system())
@@ -84,8 +84,15 @@ print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'set
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, anyupdate_short_safe_hash, 1, 3]]))
 assert lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True]], do_not_raise_on_result=True) == FAULT_MESSAGE
 query_all_registered_rental()
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listExternalTokenInfo', [0]]))
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listExternalTokenInfo', [1]]))
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getExternalTokenInfo', [1]]))
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listInternalTokenId', [test_nopht_d_hash]]))
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listInternalTokenId', [test_nopht_d_hash, 0]]))
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listInternalTokenId', [test_nopht_d_hash, 1]]))
+print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getInternalTokenId', [test_nopht_d_hash, 1]]))
 
 borrow_timestamp, _ = gen_timestamp_and_date_str_in_seconds(0)
 lender_client.set_snapshot_timestamp(rpc_server_session, borrow_timestamp)
 
-# print(borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, ]))
+print(borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, 1, 16000]]))
