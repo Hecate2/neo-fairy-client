@@ -133,7 +133,16 @@ class TestClient:
         if not open_wallet_result:
             raise ValueError(f'Failed to open wallet {path} with given password.')
         return open_wallet_result
-    
+
+    def closewallet(self) -> dict:
+        if self.verbose_return:
+            close_wallet_result, _, _ = self.meta_rpc_method("closewallet", [])
+        else:
+            close_wallet_result = self.meta_rpc_method("closewallet", [])
+        if not close_wallet_result:
+            raise ValueError(f'Failed to close wallet.')
+        return close_wallet_result
+
     @staticmethod
     def parse_raw_result(raw_result: dict):
         def parse_single_item(item: Union[Dict, List]):
@@ -363,9 +372,12 @@ class TestClient:
         return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(gas.hash), 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
     
-    def get_token_balance(self, token_address: Hash160Str, owner: Hash160Str = None, with_print=False):
+    def get_nep17token_balance(self, token_address: Hash160Str, owner: Hash160Str = None, with_print=False):
         return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
-    
+
+    def get_nep11token_balance(self, token_address: Hash160Str, tokenId: Union[bytes, str, int], owner: Hash160Str = None, with_print=False):
+        return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[owner or self.wallet_scripthash, tokenId], relay=False, with_print=with_print)
+
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [rpc_server_sessions])

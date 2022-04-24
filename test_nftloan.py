@@ -31,7 +31,8 @@ FAULT_MESSAGE = 'ASSERT is executed with false result.'
 rpc_server_session = 'NophtD'
 lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
 borrower_client = TestClient(target_url, anyupdate_short_safe_hash, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
-# client.openwallet()
+# client.openwallet()  # DO NOT OPENWALLET!
+lender_client.closewallet()  # MAKE SURE WALLET IS CLOSED!
 print('#### CHECKLIST BEFORE TEST')
 print(initial_lender_gas := lender_client.get_gas_balance())
 print(initial_borrower_gas := borrower_client.get_gas_balance())
@@ -131,9 +132,17 @@ query_all_rental(client=borrower_client, timestamp=borrow_timestamp2)
 print(borrower_client.get_gas_balance(owner=anyupdate_short_safe_hash))
 payback_timestamp = borrow_timestamp + rental_period
 print(borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp, borrower_scripthash, False]]))
+assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]], do_not_raise_on_result=True)
 query_all_rental()
+
+rpc_session_loan_expired = rpc_server_session + " payback expired"
+borrower_client.copy_snapshot(rpc_session_correct_payback, rpc_session_loan_expired)
+borrower_client.rpc_server_session = rpc_session_loan_expired
+lender_client.rpc_server_session = rpc_session_loan_expired
+borrower_client.set_snapshot_timestamp(payback_timestamp + 10, rpc_session_loan_expired)
 
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'closeNextRental', [wallet_scripthash, 1, borrower_scripthash, borrow_timestamp2]]))
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, borrower_scripthash, False]], do_not_raise_on_result=True)
-borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, borrower_scripthash, True]])
+lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]])
 query_all_rental()
+print(lender_client.get_nep11token_balance(test_nopht_d_hash, 1))
