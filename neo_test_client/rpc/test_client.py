@@ -49,6 +49,9 @@ class TestClient:
         self.with_print = with_print
         self.previous_raw_result = None
         self.previous_result = None
+        self.previous_txBase64Str = None
+        self.previous_gas_consumed: int = None
+        self.previous_network_fee: int = None
         self.verbose_return = verbose_return
         self.function_default_relay = function_default_relay
         self.script_default_relay = script_default_relay
@@ -85,20 +88,26 @@ class TestClient:
         if 'error' in result:
             raise ValueError(result['error']['message'])
         if type(result['result']) is dict:
-            if 'exception' in result['result'] and result['result']['exception'] is not None:
+            result_result: dict = result['result']
+            self.previous_gas_consumed = int(result_result.get('gasconsumed', 0)) or None
+            self.previous_network_fee = int(result_result.get('networkfee', 0)) or None
+            if 'exception' in result_result and result_result['exception'] is not None:
                 if do_not_raise_on_result:
-                    return result['result']['exception']
+                    return result_result['exception']
                 else:
                     print(post_data)
                     print(result)
-                    raise ValueError(result['result']['exception'])
+                    raise ValueError(result_result['exception'])
             if relay or (relay is None and self.function_default_relay):
-                if method in {'invokefunction', 'invokescript'} and 'tx' not in result['result']:
+                if method in {'invokefunction', 'invokescript'} and 'tx' not in result_result:
                     raise ValueError('No `tx` in response. '
                                      'Did you call `client.openwallet()` before `invokefunction`?')
-                if 'tx' in result['result']:
-                    tx = result['result']['tx']
+                if 'tx' in result_result:
+                    tx = result_result['tx']
+                    self.previous_txBase64Str = tx
                     self.sendrawtransaction(tx)
+                # else:
+                #     self.previous_txBase64Str = None
         self.previous_raw_result = result
         self.previous_result = self.parse_raw_result(result)
         if self.verbose_return:
@@ -116,6 +125,21 @@ class TestClient:
     
     def getrawtransaction(self, transaction_hash: Hash256Str, verbose: bool = False):
         return self.meta_rpc_method("getrawtransaction", [str(transaction_hash), verbose], relay=False)
+    
+    def calculatenetworkfee(self, txBase64Str):
+        return self.meta_rpc_method("calculatenetworkfee", [txBase64Str], relay=False)
+    
+    @property
+    def totalfee(self):
+        return self.previous_network_fee + self.previous_gas_consumed
+
+    @property
+    def previous_total_fee(self):
+        return self.totalfee
+
+    @property
+    def previous_system_fee(self):
+        return self.previous_gas_consumed
     
     def openwallet(self, path: str = None, password: str = None) -> dict:
         """
@@ -292,7 +316,6 @@ class TestClient:
             list(map(lambda param: self.parse_params(param), params)),
             list(map(lambda signer: signer.to_dict(), signers)),
         ]
-        rpc_server_session = rpc_server_session or self.rpc_server_session
         if rpc_server_session:
             result = self.meta_rpc_method(
                 'invokefunctionwithsession', [rpc_server_session, relay or (relay is None and self.function_default_relay)] + parameters, relay=False,

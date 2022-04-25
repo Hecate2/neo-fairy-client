@@ -31,8 +31,7 @@ FAULT_MESSAGE = 'ASSERT is executed with false result.'
 rpc_server_session = 'NophtD'
 lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
 borrower_client = TestClient(target_url, anyupdate_short_safe_hash, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
-# client.openwallet()  # DO NOT OPENWALLET!
-lender_client.closewallet()  # MAKE SURE WALLET IS CLOSED!
+lender_client.openwallet()
 print('#### CHECKLIST BEFORE TEST')
 print(initial_lender_gas := lender_client.get_gas_balance())
 print(initial_borrower_gas := borrower_client.get_gas_balance())
@@ -131,8 +130,12 @@ query_all_rental(client=borrower_client, timestamp=borrow_timestamp2)
 
 print(borrower_client.get_gas_balance(owner=anyupdate_short_safe_hash))
 payback_timestamp = borrow_timestamp + rental_period
+assert borrower_client.get_gas_balance() - initial_borrower_gas == -300  # 100*2 rental price + 50*2 collateral
+assert borrower_client.get_gas_balance(owner=anyupdate_short_safe_hash) == 100
 print(borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp, borrower_scripthash, False]]))
+assert borrower_client.get_nep11token_balance(test_nopht_d_hash, 1, owner=anyupdate_short_safe_hash) == 100
 assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]], do_not_raise_on_result=True)
+assert borrower_client.get_gas_balance() - initial_borrower_gas == -250  # +50 collateral
 query_all_rental()
 
 rpc_session_loan_expired = rpc_server_session + " payback expired"
@@ -142,7 +145,15 @@ lender_client.rpc_server_session = rpc_session_loan_expired
 borrower_client.set_snapshot_timestamp(payback_timestamp + 10, rpc_session_loan_expired)
 
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'closeNextRental', [wallet_scripthash, 1, borrower_scripthash, borrow_timestamp2]]))
+print(lender_client.previous_system_fee, lender_client.previous_network_fee)
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, borrower_scripthash, False]], do_not_raise_on_result=True)
+query_all_rental(timestamp=borrow_timestamp2)
 lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]])
 query_all_rental()
-print(lender_client.get_nep11token_balance(test_nopht_d_hash, 1))
+assert lender_client.get_nep11token_balance(test_nopht_d_hash, 1) == 30
+assert lender_client.get_nep11token_balance(test_nopht_d_hash, 1, owner=anyupdate_short_safe_hash) == 70
+assert lender_client.get_gas_balance() - initial_lender_gas == 250  # 2*100 rental price + 50 collateral
+
+assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, False]], do_not_raise_on_result=True)
+assert 0 == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, True]])
+
