@@ -84,8 +84,10 @@ def query_all_rental(client=lender_client, external_token_id=1, internal_token_i
 
 
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]]))
+print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
 query_all_rental()
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 32, 1, 10, 7, True]]))
+print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, test_nopht_d_hash, 1, 10]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, anyupdate_short_safe_hash, 1, 3]]))
 assert lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True]], do_not_raise_on_result=True) == FAULT_MESSAGE
@@ -145,10 +147,19 @@ lender_client.rpc_server_session = rpc_session_loan_expired
 borrower_client.set_snapshot_timestamp(payback_timestamp + 10, rpc_session_loan_expired)
 
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'closeNextRental', [wallet_scripthash, 1, borrower_scripthash, borrow_timestamp2]]))
-print(lender_client.previous_system_fee, lender_client.previous_network_fee)
+print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, borrower_scripthash, False]], do_not_raise_on_result=True)
 query_all_rental(timestamp=borrow_timestamp2)
 lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]])
+try:
+    print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
+except:
+    r'''
+Here we fail to compute the network fee,
+because neo/src/neo/Wallets/Wallet.cs uses ApplicationEngine.Run at line 529,
+using system time instead of the time set by our timestamp.
+An ideal solution is under consideration.
+'''
 query_all_rental()
 assert lender_client.get_nep11token_balance(test_nopht_d_hash, 1) == 30
 assert lender_client.get_nep11token_balance(test_nopht_d_hash, 1, owner=anyupdate_short_safe_hash) == 70
