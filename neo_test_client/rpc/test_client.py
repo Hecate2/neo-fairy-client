@@ -435,3 +435,6 @@ class TestClient:
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
         return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
+
+    def virtual_deploy(self, rpc_server_session: str, nef: bytes, manifest: str):
+        return Hash160Str(self.meta_rpc_method("virtualdeploy", [rpc_server_session, base64.b64encode(nef).decode(), manifest])[rpc_server_session])
