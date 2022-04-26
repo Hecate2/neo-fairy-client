@@ -1,7 +1,7 @@
-import json
+import base64
 from neo_test_client.rpc import TestClient
 from neo_test_client.utils.types import Hash160Str, Signer, WitnessScope
-from neo_test_client.utils.timers import gen_timestamp_and_date_str_in_seconds
+from neo_test_client.utils.interpreters import Interpreter
 
 target_url = 'http://127.0.0.1:10332'  # to testnet, not mainnet
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
@@ -34,6 +34,11 @@ lender_client.openwallet()
 scripthash = lender_client.virtual_deploy(rpc_server_session, nef_file, manifest)
 print(scripthash)
 assert scripthash == lender_client.virtual_deploy(rpc_server_session, nef_file, manifest)
-lender_client.closewallet()
 lender_client.contract_scripthash = scripthash
+lender_client.closewallet()
+assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
+lender_client.put_storage_with_session(2, 0)
+assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():None}
+lender_client.put_storage_with_session(2, 1)
+assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
 print(lender_client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]))

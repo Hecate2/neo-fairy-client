@@ -15,6 +15,10 @@ class Interpreter:
     
     @staticmethod
     def int_to_bytes(int_: int, bytes_needed: int = None):
+        if int_ == 0:
+            return b''
+        if int_ < 0:
+            raise ValueError(f'Cannot handle minus numbers. Got {int_}')
         if not bytes_needed:
             bytes_needed = int(log(int_, 256)) + 1  # may be not accurate
         try:

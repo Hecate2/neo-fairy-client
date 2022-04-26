@@ -5,6 +5,7 @@ import requests
 from retry import retry
 
 from neo_test_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
+from neo_test_client.utils.interpreters import Interpreter
 from neo3.core.types import UInt160, UInt256
 from neo3.contracts import NeoToken, GasToken
 
@@ -424,17 +425,39 @@ class TestClient:
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
-    def set_snapshot_timestamp(self, timestamp_ms: int, rpc_server_session: str = None):
+    def set_snapshot_timestamp(self, timestamp_ms: int, rpc_server_session: str = None) -> Dict[str, int]:
         if rpc_server_session is None:
             if self.rpc_server_session is None:
                 raise ValueError('No RpcServer session specified')
             rpc_server_session = self.rpc_server_session
         return self.meta_rpc_method("setsnapshottimestamp", [rpc_server_session, timestamp_ms])
     
-    def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str]):
+    def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str]) -> Dict[str, int]:
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
         return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
 
-    def virtual_deploy(self, rpc_server_session: str, nef: bytes, manifest: str):
+    def virtual_deploy(self, rpc_server_session: str, nef: bytes, manifest: str) -> Hash160Str:
         return Hash160Str(self.meta_rpc_method("virtualdeploy", [rpc_server_session, base64.b64encode(nef).decode(), manifest])[rpc_server_session])
+
+    @staticmethod
+    def all_to_base64(key: Union[str, bytes, int]) -> str:
+        if type(key) is str:
+            key = key.encode()
+        if type(key) is int:
+            key = Interpreter.int_to_bytes(key)
+        if type(key) is bytes:
+            key = base64.b64encode(key).decode()
+        else:
+            raise ValueError(f'Unexpected input type {type(key)} {key}')
+        return key
+
+    def get_storage_with_session(self, key: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("getstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
+
+    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("putstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
