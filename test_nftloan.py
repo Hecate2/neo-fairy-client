@@ -167,4 +167,3 @@ assert lender_client.get_gas_balance() - initial_lender_gas == 250  # 2*100 rent
 
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, False]], do_not_raise_on_result=True)
 assert 0 == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, True]])
-

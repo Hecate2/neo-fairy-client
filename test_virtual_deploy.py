@@ -31,11 +31,15 @@ lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address
 borrower_client = TestClient(target_url, anyupdate_short_safe_hash, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
 lender_client.openwallet()
-scripthash = lender_client.virtual_deploy(rpc_server_session, nef_file, manifest)
-print(scripthash)
-assert scripthash == lender_client.virtual_deploy(rpc_server_session, nef_file, manifest)
-lender_client.contract_scripthash = scripthash
+nftloan_scripthash = lender_client.virtual_deploy(rpc_server_session, nef_file, manifest)
+print(nftloan_scripthash)
+assert nftloan_scripthash == lender_client.virtual_deploy(rpc_server_session, nef_file, manifest)
+lender_client.contract_scripthash = test_nopht_d_hash
 lender_client.closewallet()
+print(lender_client.invokefunction('totalSupply'))
+print(lender_client.invokefunction('balanceOf', params=[wallet_scripthash]))
+print(lender_client.invokefunction('balanceOf', params=[wallet_scripthash, 1]))
+lender_client.contract_scripthash = nftloan_scripthash
 assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
 lender_client.put_storage_with_session(2, 0)
 assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():None}
