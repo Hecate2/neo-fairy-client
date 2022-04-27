@@ -33,11 +33,17 @@ lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address
 borrower_client = TestClient(target_url, anyupdate_short_safe_hash, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
 lender_client.openwallet()
 print('#### CHECKLIST BEFORE TEST')
-print(initial_lender_gas := lender_client.get_gas_balance())
-print(initial_borrower_gas := borrower_client.get_gas_balance())
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
 print(lender_client.new_snapshots_from_current_system())
 print(lender_client.list_snapshots())
+print(lender_client.set_gas_balance(100_0000_0000))
+print(borrower_client.set_gas_balance(100_0000_0000))
+print(lender_client.set_neo_balance(100))
+print(borrower_client.set_neo_balance(100))
+assert lender_client.get_neo_balance() == borrower_client.get_neo_balance() == 100
+print(initial_lender_gas := lender_client.get_gas_balance())
+print(initial_borrower_gas := borrower_client.get_gas_balance())
+assert initial_lender_gas == initial_borrower_gas == 100_0000_0000
 print('#### END CHECKLIST')
 
 lender_client.invokefunction('putStorage', params=[0x02, 1])

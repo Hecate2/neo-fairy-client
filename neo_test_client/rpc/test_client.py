@@ -402,6 +402,12 @@ class TestClient:
     def get_nep11token_balance(self, token_address: Hash160Str, tokenId: Union[bytes, str, int], owner: Hash160Str = None, with_print=False):
         return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[owner or self.wallet_scripthash, tokenId], relay=False, with_print=with_print)
 
+    b"""
+    Fairy features below! Mount your neo-cli RpcServer with
+    https://github.com/Hecate2/neo-fairy-test/
+    before using the following methods!
+    """
+
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [rpc_server_sessions])
@@ -461,3 +467,20 @@ class TestClient:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("putstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
+
+    def set_neo_balance(self, balance: int, rpc_server_session: str = None, account: Hash160Str = None):
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        account = account or self.wallet_scripthash
+        return self.meta_rpc_method("setneobalance", [rpc_server_session, account, balance])
+
+    def set_gas_balance(self, balance: int, rpc_server_session: str = None, account: Hash160Str = None):
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        account = account or self.wallet_scripthash
+        return self.meta_rpc_method("setgasbalance", [rpc_server_session, account, balance])
+
+    def set_nep17_balance(self, contract: Hash160Str, balance: int, rpc_server_session: str = None, account: Hash160Str = None, byte_prefix: int = 1):
+        if byte_prefix >= 256 or byte_prefix < 0:
+            raise ValueError(f'Only 0<=byte_prefix<=255 accepted. Got {byte_prefix}')
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        account = account or self.wallet_scripthash
+        return self.meta_rpc_method("setnep17balance", [rpc_server_session, contract, account, balance, byte_prefix])
