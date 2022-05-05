@@ -98,6 +98,8 @@ class TestClient:
                 else:
                     print(post_data)
                     print(result)
+                    if 'traceback' in result_result and result_result['traceback']:
+                        raise ValueError(result_result['traceback'])
                     raise ValueError(result_result['exception'])
             if relay or (relay is None and self.function_default_relay):
                 if method in {'invokefunction', 'invokescript'} and 'tx' not in result_result:
