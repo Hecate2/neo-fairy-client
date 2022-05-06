@@ -172,4 +172,8 @@ assert lender_client.get_nep11token_balance(test_nopht_d_hash, 1, owner=anyupdat
 assert lender_client.get_gas_balance() - initial_lender_gas == 250  # 2*100 rental price + 50 collateral
 
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, False]], do_not_raise_on_result=True)
+assert [] == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, Hash160Str.zero(), 70, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]])
+assert [] == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, wallet_scripthash, 70, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]])
+assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, wallet_scripthash, 71, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, Hash160Str.zero(), 71, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]], do_not_raise_on_result=True)
 assert 0 == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, True]])
