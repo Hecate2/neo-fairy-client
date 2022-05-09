@@ -492,6 +492,14 @@ class TestClient:
     Fairy debugger features!
     """
     
-    def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract: Hash160Str = None):
-        contract = contract or self.contract_scripthash
-        return self.meta_rpc_method("setdebuginfo", [contract, nefdbgnfo_content, dumpnef_content])
+    def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("setdebuginfo", [contract_scripthash, nefdbgnfo_content, dumpnef_content])
+
+    def list_debug_info(self):
+        return self.meta_rpc_method("listdebuginfo", [])
+    
+    def delete_debug_info(self, contract_scripthashes: Union[List[Hash160Str], Hash160Str]):
+        if type(contract_scripthashes) is Hash160Str:
+            return self.meta_rpc_method("deletedebuginfo", [contract_scripthashes])
+        return self.meta_rpc_method("deletedebuginfo", contract_scripthashes)
