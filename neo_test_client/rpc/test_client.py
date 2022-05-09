@@ -445,7 +445,8 @@ class TestClient:
             return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
         return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
 
-    def virtual_deploy(self, rpc_server_session: str, nef: bytes, manifest: str) -> Hash160Str:
+    def virtual_deploy(self, nef: bytes, manifest: str, rpc_server_session: str = None) -> Hash160Str:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
         return Hash160Str(self.meta_rpc_method("virtualdeploy", [rpc_server_session, base64.b64encode(nef).decode(), manifest])[rpc_server_session])
 
     @staticmethod
@@ -486,3 +487,11 @@ class TestClient:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setnep17balance", [rpc_server_session, contract, account, balance, byte_prefix])
+
+    b"""
+    Fairy debugger features!
+    """
+    
+    def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract: Hash160Str = None):
+        contract = contract or self.contract_scripthash
+        return self.meta_rpc_method("setdebuginfo", [contract, nefdbgnfo_content, dumpnef_content])
