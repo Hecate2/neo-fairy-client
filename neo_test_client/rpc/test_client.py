@@ -498,7 +498,11 @@ class TestClient:
 
     def list_debug_info(self) -> List[Hash160Str]:
         return [Hash160Str(i) for i in self.meta_rpc_method("listdebuginfo", [])]
-    
+
+    def list_filenames_of_contract(self, contract_scripthash: Hash160Str = None) -> List[Hash160Str]:
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("listfilenamesofcontract", [contract_scripthash])
+
     def delete_debug_info(self, contract_scripthashes: Union[List[Hash160Str], Hash160Str]) -> Dict[Hash160Str, bool]:
         if type(contract_scripthashes) is Hash160Str:
             result: Dict[str, bool] = self.meta_rpc_method("deletedebuginfo", [contract_scripthashes])

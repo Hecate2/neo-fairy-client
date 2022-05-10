@@ -35,5 +35,6 @@ client.contract_scripthash = client.virtual_deploy(nef_file, manifest)
 print(client.contract_scripthash)
 print(client.delete_debug_info(client.contract_scripthash))
 print(client.set_debug_info(nefdbgnfo, dumpnef))
+print(client.list_filenames_of_contract())
 assert client.list_debug_info() == [client.contract_scripthash]
 print(client.delete_debug_info(client.contract_scripthash))
