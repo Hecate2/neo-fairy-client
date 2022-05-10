@@ -24,7 +24,7 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef', 'rb') as f:
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
     manifest = f.read()
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.debug.json', 'r') as f:
-    nefdbgnfo = f.read()
+    nefdbgnfo = json.dumps(json.loads(f.read()), separators=(',', ':'))
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
     dumpnef = f.read()
 
@@ -33,6 +33,7 @@ client = TestClient(target_url, Hash160Str.zero(), wallet_address, wallet_path, 
 client.openwallet()
 client.contract_scripthash = client.virtual_deploy(nef_file, manifest)
 print(client.contract_scripthash)
-client.set_debug_info(nefdbgnfo, dumpnef)
-print(client.list_debug_info())
+print(client.delete_debug_info(client.contract_scripthash))
+print(client.set_debug_info(nefdbgnfo, dumpnef))
+assert client.list_debug_info() == [client.contract_scripthash]
 print(client.delete_debug_info(client.contract_scripthash))

@@ -492,14 +492,16 @@ class TestClient:
     Fairy debugger features!
     """
     
-    def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract_scripthash: Hash160Str = None):
+    def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract_scripthash: Hash160Str = None) -> Dict[Hash160Str, bool]:
         contract_scripthash = contract_scripthash or self.contract_scripthash
-        return self.meta_rpc_method("setdebuginfo", [contract_scripthash, nefdbgnfo_content, dumpnef_content])
+        return {Hash160Str(k): v for k, v in self.meta_rpc_method("setdebuginfo", [contract_scripthash, nefdbgnfo_content, dumpnef_content]).items()}
 
-    def list_debug_info(self):
-        return self.meta_rpc_method("listdebuginfo", [])
+    def list_debug_info(self) -> List[Hash160Str]:
+        return [Hash160Str(i) for i in self.meta_rpc_method("listdebuginfo", [])]
     
-    def delete_debug_info(self, contract_scripthashes: Union[List[Hash160Str], Hash160Str]):
+    def delete_debug_info(self, contract_scripthashes: Union[List[Hash160Str], Hash160Str]) -> Dict[Hash160Str, bool]:
         if type(contract_scripthashes) is Hash160Str:
-            return self.meta_rpc_method("deletedebuginfo", [contract_scripthashes])
-        return self.meta_rpc_method("deletedebuginfo", contract_scripthashes)
+            result: Dict[str, bool] = self.meta_rpc_method("deletedebuginfo", [contract_scripthashes])
+        else:
+            result: Dict[str, bool] = self.meta_rpc_method("deletedebuginfo", contract_scripthashes)
+        return {Hash160Str(k): v for k, v in result.items()}
