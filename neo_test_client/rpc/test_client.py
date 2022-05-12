@@ -491,7 +491,7 @@ class TestClient:
     b"""
     Fairy debugger features!
     """
-    
+    """debug info and file names"""
     def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract_scripthash: Hash160Str = None) -> Dict[Hash160Str, bool]:
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return {Hash160Str(k): v for k, v in self.meta_rpc_method("setdebuginfo", [contract_scripthash, nefdbgnfo_content, dumpnef_content]).items()}
@@ -509,3 +509,45 @@ class TestClient:
         else:
             result: Dict[str, bool] = self.meta_rpc_method("deletedebuginfo", contract_scripthashes)
         return {Hash160Str(k): v for k, v in result.items()}
+
+    """breakpoints"""
+    def set_assembly_breakpoints(self, instruction_pointers: Union[int, List[int]], contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        if type(instruction_pointers) is int:
+            return self.meta_rpc_method("setassemblybreakpoints", [contract_scripthash, instruction_pointers])
+        else:
+            return self.meta_rpc_method("setassemblybreakpoints", [contract_scripthash] + list(instruction_pointers))
+
+    def list_assembly_breakpoints(self, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("listassemblybreakpoints", [contract_scripthash])
+
+    def delete_assembly_breakpoints(self, instruction_pointers: Union[int, List[int]] = None, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        instruction_pointers = [] if instruction_pointers is None else instruction_pointers
+        if type(instruction_pointers) is int:
+            return self.meta_rpc_method("deleteassemblybreakpoints", [contract_scripthash, instruction_pointers])
+        else:
+            return self.meta_rpc_method("deleteassemblybreakpoints", [contract_scripthash] + list(instruction_pointers))
+
+    def set_source_code_breakpoint(self, filename: str, line_num: int, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("setsourcecodebreakpoints", [contract_scripthash, filename, line_num])
+
+    def set_source_code_breakpoints(self, filename_and_line_num: List[Union[str, int]], contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("setsourcecodebreakpoints", [contract_scripthash] + filename_and_line_num)
+
+    def list_source_code_breakpoints(self, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("listsourcecodebreakpoints", [contract_scripthash])
+
+    def delete_source_code_breakpoint(self, filename: str, line_num: int, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("deletesourcecodebreakpoints", [contract_scripthash, filename, line_num])
+
+    def delete_source_code_breakpoints(self, filename_and_line_num: List[Union[str, int]] = None, contract_scripthash: Hash160Str = None):
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        filename_and_line_num = filename_and_line_num or []
+        return self.meta_rpc_method("deletesourcecodebreakpoints", [contract_scripthash] + filename_and_line_num)
+

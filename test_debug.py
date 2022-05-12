@@ -37,4 +37,22 @@ print(client.delete_debug_info(client.contract_scripthash))
 print(client.set_debug_info(nefdbgnfo, dumpnef))
 print(client.list_filenames_of_contract())
 assert client.list_debug_info() == [client.contract_scripthash]
+
+print(client.set_assembly_breakpoints(0))
+print(client.set_assembly_breakpoints(3))
+try:
+    client.set_assembly_breakpoints(1)
+except ValueError as e:
+    print(e)
+    pass
+print(client.list_assembly_breakpoints())
+
+print(client.set_source_code_breakpoint('NFTLoan.cs', 84))
+print(client.set_source_code_breakpoints(['DivisibleNep11Token.cs', 100, 'TokenContract.cs', 30]))
+print(client.list_source_code_breakpoints())
+
+print(client.delete_assembly_breakpoints(0))
+print(client.delete_assembly_breakpoints())
+print(client.delete_source_code_breakpoints(['DivisibleNep11Token.cs', 100]))
+print(client.delete_source_code_breakpoints([]))
 print(client.delete_debug_info(client.contract_scripthash))

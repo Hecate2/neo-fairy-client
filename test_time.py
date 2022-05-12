@@ -29,10 +29,10 @@ session = 'Runtime.Time'
 print(client.new_snapshots_from_current_system(session))
 print(client.list_snapshots())
 timestamp_dict = client.get_snapshot_timestamp(session)
-timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], session=session)
+timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session)
 print(timestamp_dict, timestamp_returned_from_contract)
 assert timestamp_dict[session] == 0
-print(client.set_snapshot_timestamp(session, int(time.time() + 86400) * 1000))
-print(timestamp_returned_from_contract := client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], session=session))
+print(client.set_snapshot_timestamp(int(time.time() + 86400) * 1000, session))
+print(timestamp_returned_from_contract := client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session))
 print(timestamp_dict := client.get_snapshot_timestamp(session))
 assert timestamp_dict[session] == timestamp_returned_from_contract
