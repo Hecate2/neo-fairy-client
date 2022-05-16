@@ -601,6 +601,10 @@ class TestClient:
     def list_debug_snapshots(self):
         return self.meta_rpc_method("listdebugsnapshots", [])
 
+    def get_method_by_instruction_pointer(self, instruction_pointer: int, scripthash: Hash160Str = None):
+        scripthash = scripthash or self.contract_scripthash
+        return self.meta_rpc_method("getmethodbyinstructionpointer", [scripthash, instruction_pointer])
+
     def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
@@ -659,7 +663,42 @@ class TestClient:
         result = self.meta_rpc_method_with_raw_result("debugstepover", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
+    def debug_step_over_source_code(self, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("debugstepoversourcecode", [rpc_server_session])
+        return RpcBreakpoint.from_raw_result(result)
+
     def debug_step_over_assembly(self, rpc_server_session: str = None) -> Any:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugstepoverassembly", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
+
+    def get_local_variables(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getlocalvariables", [rpc_server_session, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)
+
+    def get_arguments(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getarguments", [rpc_server_session, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)
+
+    def get_static_fields(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getstaticfields", [rpc_server_session, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)
+
+    def get_evaluation_stack(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getevaluationstack", [rpc_server_session, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)
+
+    def get_instruction_pointer(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getinstructionpointer", [rpc_server_session, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)[0]
+
+    def get_variable_value_by_name(self, variable_name: str, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getvariablevaluebyname", [rpc_server_session, variable_name, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)

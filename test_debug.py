@@ -51,12 +51,22 @@ print(client.set_source_code_breakpoint('NFTLoan.cs', 84))
 print(client.set_source_code_breakpoints(['DivisibleNep11Token.cs', 100, 'TokenContract.cs', 30]))
 print(client.set_source_code_breakpoints(['NFTLoan.cs', 242]))
 print(client.list_source_code_breakpoints())
+print(client.get_method_by_instruction_pointer(4384))
 
 print(client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]))
 print(client.debug_step_into())
 print(client.debug_step_out())
 print(client.debug_step_over_assembly())
+
+print(client.get_local_variables())
+print(client.get_arguments())
+print(client.get_static_fields())
+print(client.get_evaluation_stack())
+print(client.get_instruction_pointer())
+print(client.get_variable_value_by_name("flashLoanPrice"))
+
 print(client.debug_step_over())
+print(client.debug_step_over_source_code())
 print(client.debug_continue())
 
 print(client.delete_assembly_breakpoints(0))
