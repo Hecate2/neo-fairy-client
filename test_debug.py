@@ -55,6 +55,7 @@ print(client.list_source_code_breakpoints())
 print(client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]))
 print(client.debug_step_into())
 print(client.debug_step_out())
+print(client.debug_step_over_assembly())
 print(client.debug_step_over())
 print(client.debug_continue())
 
