@@ -52,10 +52,11 @@ print(client.set_source_code_breakpoints(['DivisibleNep11Token.cs', 100, 'TokenC
 print(client.set_source_code_breakpoints(['NFTLoan.cs', 242]))
 print(client.list_source_code_breakpoints())
 
-breakpoint_ = client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True])
-print(breakpoint_)
-breakpoint_ = client.debug_continue()
-print(breakpoint_)
+print(client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]))
+print(client.debug_step_into())
+print(client.debug_step_out())
+print(client.debug_step_over())
+print(client.debug_continue())
 
 print(client.delete_assembly_breakpoints(0))
 print(client.delete_assembly_breakpoints())

@@ -638,3 +638,24 @@ class TestClient:
         result = result['result']
         return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['instructionpointer'],
                              result['sourcefilename'], result['sourcelinenum'])
+
+    def debug_step_into(self, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("debugstepinto", [rpc_server_session])
+        result = result['result']
+        return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['instructionpointer'],
+                             result['sourcefilename'], result['sourcelinenum'])
+
+    def debug_step_out(self, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("debugstepout", [rpc_server_session])
+        result = result['result']
+        return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['instructionpointer'],
+                             result['sourcefilename'], result['sourcelinenum'])
+
+    def debug_step_over(self, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("debugstepover", [rpc_server_session])
+        result = result['result']
+        return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['instructionpointer'],
+                             result['sourcefilename'], result['sourcelinenum'])
