@@ -29,7 +29,7 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
     dumpnef = f.read()
 
 rpc_server_session = 'debug'
-client = TestClient(target_url, Hash160Str.zero(), wallet_address, wallet_path, wallet_password, with_print=True, rpc_server_session=rpc_server_session)
+client = TestClient(target_url, Hash160Str.zero(), wallet_address, wallet_path, wallet_password, with_print=True, rpc_server_session=rpc_server_session, signer=lender)
 client.openwallet()
 client.contract_scripthash = client.virtual_deploy(nef_file, manifest)
 print(client.contract_scripthash)
@@ -49,7 +49,13 @@ print(client.list_assembly_breakpoints())
 
 print(client.set_source_code_breakpoint('NFTLoan.cs', 84))
 print(client.set_source_code_breakpoints(['DivisibleNep11Token.cs', 100, 'TokenContract.cs', 30]))
+print(client.set_source_code_breakpoints(['NFTLoan.cs', 242]))
 print(client.list_source_code_breakpoints())
+
+breakpoint_ = client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True])
+print(breakpoint_)
+breakpoint_ = client.debug_continue()
+print(breakpoint_)
 
 print(client.delete_assembly_breakpoints(0))
 print(client.delete_assembly_breakpoints())

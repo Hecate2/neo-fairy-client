@@ -8,6 +8,7 @@ from neo_test_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Si
 from neo_test_client.utils.interpreters import Interpreter
 from neo3.core.types import UInt160, UInt256
 from neo3.contracts import NeoToken, GasToken
+from neo3vm import VMState
 
 neo, gas = NeoToken(), GasToken()
 
@@ -18,6 +19,30 @@ RequestExceptions = (
     requests.Timeout,
 )
 request_timeout = None  # 20
+
+
+class RpcBreakpoint:
+    def __init__(self, state: str, break_reason: str, scripthash: Union[str, Hash160Str],
+                 instruction_pointer: int, source_filename: str = None, source_line_num: int = None,
+                 exception: str = None, stack: Any = None):
+        self.state: VMState = {'BREAK': VMState.BREAK, 'FAULT': VMState.FAULT, 'HALT': VMState.HALT, 'NONE': VMState.NONE}[state]
+        self.break_reason = break_reason
+        if type(scripthash) is str:
+            scripthash = Hash160Str(scripthash)
+        self.scripthash = scripthash
+        self.instruction_pointer = instruction_pointer
+        self.source_filename = source_filename
+        self.source_line_num = source_line_num
+        self.exception = exception
+        self.stack = stack
+    
+    def __repr__(self):
+        if self.state == VMState.HALT:
+            return f'''RpcBreakpoint {self.state} {self.stack}'''
+        if self.source_filename and self.source_line_num:
+            return f'''RpcBreakpoint {self.state} {self.source_filename} line {self.source_line_num}'''
+        else:
+            return f'''RpcBreakpoint {self.state} {self.scripthash} instructionPointer {self.instruction_pointer}'''
 
 
 class TestClient:
@@ -82,6 +107,16 @@ class TestClient:
         return processed_struct
     
     @retry(RequestExceptions, tries=2, logger=None)
+    def meta_rpc_method_with_raw_result(self, method: str, parameters: List) -> Any:
+        post_data = self.request_body_builder(method, parameters)
+        self.previous_post_data = post_data
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=request_timeout).text)
+        if 'error' in result:
+            raise ValueError(result['error'])
+        self.previous_raw_result = result
+        self.previous_result = None
+        return result
+
     def meta_rpc_method(self, method: str, parameters: List, relay: bool = None, do_not_raise_on_result=False) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
@@ -112,7 +147,7 @@ class TestClient:
                 # else:
                 #     self.previous_txBase64Str = None
         self.previous_raw_result = result
-        self.previous_result = self.parse_raw_result(result)
+        self.previous_result = self.parse_stack_from_raw_result(result)
         if self.verbose_return:
             return self.previous_result, result, post_data
         return self.previous_result
@@ -171,7 +206,7 @@ class TestClient:
         return close_wallet_result
 
     @staticmethod
-    def parse_raw_result(raw_result: dict):
+    def parse_stack_from_raw_result(raw_result: dict):
         def parse_single_item(item: Union[Dict, List]):
             if 'iterator' in item:
                 item = item['iterator']
@@ -551,3 +586,55 @@ class TestClient:
         filename_and_line_num = filename_and_line_num or []
         return self.meta_rpc_method("deletesourcecodebreakpoints", [contract_scripthash] + filename_and_line_num)
 
+    def delete_debug_snapshots(self, rpc_server_sessions: Union[List[str], str]):
+        if type(rpc_server_sessions) is str:
+            return self.meta_rpc_method("deletedebugsnapshots", [rpc_server_sessions])
+        return self.meta_rpc_method("deletedebugsnapshots", rpc_server_sessions)
+
+    def list_debug_snapshots(self):
+        return self.meta_rpc_method("listdebugsnapshots", [])
+
+    def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
+                                       params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
+                                       signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
+                                       with_print=True, rpc_server_session: str = None) -> Any:
+        scripthash = scripthash or self.contract_scripthash
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        if self.with_print and with_print:
+            if rpc_server_session:
+                print(f'{rpc_server_session}::debugfunction {operation}')
+            else:
+                print(f'debugfunction {operation}')
+    
+        if not params:
+            params = []
+        if not signers:
+            signers = [self.signer]
+        parameters = [
+            str(scripthash),
+            operation,
+            list(map(lambda param: self.parse_params(param), params)),
+            list(map(lambda signer: signer.to_dict(), signers)),
+        ]
+        raw_result = self.meta_rpc_method_with_raw_result(
+            'debugfunctionwithsession',
+            [rpc_server_session, relay or (relay is None and self.function_default_relay)] + parameters)
+        result = raw_result['result']
+        return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['instructionpointer'],
+                             result['sourcefilename'], result['sourcelinenum'], result['exception'], self.parse_stack_from_raw_result(raw_result))
+
+    def debug_function_with_session(self, operation: str,
+                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
+                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
+                                        with_print=True, rpc_server_session: str = None) -> Any:
+        return self.debug_any_function_with_session(
+            self.contract_scripthash, operation,
+            params=params, signers=signers, relay=relay, do_not_raise_on_result=do_not_raise_on_result,
+            with_print=with_print, rpc_server_session=rpc_server_session)
+
+    def debug_continue(self, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("debugcontinue", [rpc_server_session])
+        result = result['result']
+        return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['instructionpointer'],
+                             result['sourcefilename'], result['sourcelinenum'])
