@@ -534,9 +534,9 @@ class TestClient:
     Fairy debugger features!
     """
     """debug info and file names"""
-    def set_debug_info(self, nefdbgnfo_content: str, dumpnef_content: str, contract_scripthash: Hash160Str = None) -> Dict[Hash160Str, bool]:
+    def set_debug_info(self, nefdbgnfo: bytes, dumpnef_content: str, contract_scripthash: Hash160Str = None) -> Dict[Hash160Str, bool]:
         contract_scripthash = contract_scripthash or self.contract_scripthash
-        return {Hash160Str(k): v for k, v in self.meta_rpc_method("setdebuginfo", [contract_scripthash, nefdbgnfo_content, dumpnef_content]).items()}
+        return {Hash160Str(k): v for k, v in self.meta_rpc_method("setdebuginfo", [contract_scripthash, self.all_to_base64(nefdbgnfo), dumpnef_content]).items()}
 
     def list_debug_info(self) -> List[Hash160Str]:
         return [Hash160Str(i) for i in self.meta_rpc_method("listdebuginfo", [])]

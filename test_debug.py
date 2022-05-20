@@ -23,8 +23,8 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef', 'rb') as f:
     nef_file = f.read()
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
     manifest = f.read()
-with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.debug.json', 'r') as f:
-    nefdbgnfo = json.dumps(json.loads(f.read()), separators=(',', ':'))
+with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nefdbgnfo', 'rb') as f:
+    nefdbgnfo = f.read()
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
     dumpnef = f.read()
 
