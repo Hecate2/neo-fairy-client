@@ -702,3 +702,8 @@ class TestClient:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("getvariablevaluebyname", [rpc_server_session, variable_name, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
+
+    def get_variable_names_and_values(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method_with_raw_result("getvariablenamesandvalues", [rpc_server_session, invocation_stack_index])
+        return self.parse_stack_from_raw_result(result)

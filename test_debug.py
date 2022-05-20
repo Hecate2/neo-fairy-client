@@ -64,6 +64,7 @@ print(client.get_static_fields())
 print(client.get_evaluation_stack())
 print(client.get_instruction_pointer())
 print(client.get_variable_value_by_name("flashLoanPrice"))
+print(client.get_variable_names_and_values())
 
 print(client.debug_step_over())
 print(client.debug_step_over_source_code())
