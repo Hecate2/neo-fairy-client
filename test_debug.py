@@ -3,7 +3,7 @@ from neo_test_client.rpc import TestClient
 from neo_test_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_test_client.utils.timers import gen_timestamp_and_date_str_in_seconds
 
-target_url = 'http://127.0.0.1:10332'  # to testnet, not mainnet
+target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
 wallet_path = 'testnet.json'
@@ -30,7 +30,9 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
 
 rpc_server_session = 'debug'
 client = TestClient(target_url, Hash160Str.zero(), wallet_address, wallet_path, wallet_password, with_print=True, rpc_server_session=rpc_server_session, signer=lender)
-client.openwallet()
+client.open_fairy_wallet()
+client.new_snapshots_from_current_system(rpc_server_session)
+client.set_gas_balance(100_0000_0000)
 client.contract_scripthash = client.virtual_deploy(nef_file, manifest)
 print(client.contract_scripthash)
 print(client.delete_debug_info(client.contract_scripthash))

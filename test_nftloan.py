@@ -3,7 +3,7 @@ from neo_test_client.rpc import TestClient
 from neo_test_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_test_client.utils.timers import gen_timestamp_and_date_str_in_seconds
 
-target_url = 'http://127.0.0.1:10332'  # to testnet, not mainnet
+target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
 wallet_path = 'testnet.json'
@@ -16,8 +16,15 @@ borrower_wallet_path = 'user1.json'
 lender = Signer(wallet_scripthash, scopes=WitnessScope.Global)
 borrower = Signer(borrower_scripthash, scopes=WitnessScope.Global)
 
-anyupdate_short_safe_hash = Hash160Str('0x5c1068339fae89eb1a743909d0213e1d99dc5dc9')  # AnyUpdate short safe
-test_nopht_d_hash = Hash160Str('0x2a6cd301cad359fc85e42454217e51485fffe745')
+with open('../AnyUpdate/AnyUpdateShortSafe.nef', 'rb') as f:
+    anyupdate_nef_file = f.read()
+with open('../AnyUpdate/AnyUpdateShortSafe.manifest.json', 'r') as f:
+    anyupdate_manifest = f.read()
+
+with open('../NFTLoan/NophtD/bin/sc/TestNophtD.nef', 'rb') as f:
+    test_nopht_d_nef = f.read()
+with open('../NFTLoan/NophtD/bin/sc/TestNophtD.manifest.json', 'r') as f:
+    test_nopht_d_manifest = f.read()
 
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef', 'rb') as f:
     nef_file = f.read()
@@ -29,9 +36,9 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
 FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
 rpc_server_session = 'NophtD'
-lender_client = TestClient(target_url, anyupdate_short_safe_hash, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
-borrower_client = TestClient(target_url, anyupdate_short_safe_hash, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
-lender_client.openwallet()
+lender_client = TestClient(target_url, Hash160Str.zero(), wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
+borrower_client = TestClient(target_url, Hash160Str.zero(), borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
+lender_client.open_fairy_wallet()
 print('#### CHECKLIST BEFORE TEST')
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
 print(lender_client.new_snapshots_from_current_system())
@@ -45,6 +52,11 @@ print(initial_lender_gas := lender_client.get_gas_balance())
 print(initial_borrower_gas := borrower_client.get_gas_balance())
 assert initial_lender_gas == initial_borrower_gas == 100_0000_0000
 print('#### END CHECKLIST')
+
+anyupdate_short_safe_hash = lender_client.virtual_deploy(anyupdate_nef_file, anyupdate_manifest)
+test_nopht_d_hash = lender_client.virtual_deploy(test_nopht_d_nef, test_nopht_d_manifest)
+lender_client.contract_scripthash = anyupdate_short_safe_hash
+borrower_client.contract_scripthash = anyupdate_short_safe_hash
 
 lender_client.invokefunction('putStorage', params=[0x02, 1])
 
@@ -157,14 +169,10 @@ print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.p
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, borrower_scripthash, False]], do_not_raise_on_result=True)
 query_all_rental(timestamp=borrow_timestamp2)
 lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]])
-try:
-    print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
-except:
-    r'''
-Here we fail to compute the network fee,
-because neo/src/neo/Wallets/Wallet.cs uses ApplicationEngine.Run at line 529,
-using system time instead of the time set by our timestamp.
-An ideal solution is under consideration.
+print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
+r'''
+In order to compute network fee at a different timestamp,
+make sure your C# codes of your Fairy plugin has persistingBlock assigned for MakeTransaction
 '''
 query_all_rental()
 assert lender_client.get_nep11token_balance(test_nopht_d_hash, 1) == 30

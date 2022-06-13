@@ -452,6 +452,28 @@ class TestClient:
     before using the following methods!
     """
 
+    def open_fairy_wallet(self, path: str = None, password: str = None) -> dict:
+        if not path:
+            path = self.wallet_path
+        if not password:
+            password = self.wallet_password
+        if self.verbose_return:
+            open_wallet_result, _, _ = self.meta_rpc_method("openfairywallet", [path, password])
+        else:
+            open_wallet_result = self.meta_rpc_method("openfairywallet", [path, password])
+        if not open_wallet_result:
+            raise ValueError(f'Failed to open wallet {path} with given password.')
+        return open_wallet_result
+
+    def close_fairy_wallet(self) -> dict:
+        if self.verbose_return:
+            close_wallet_result, _, _ = self.meta_rpc_method("closefairywallet", [])
+        else:
+            close_wallet_result = self.meta_rpc_method("closefairywallet", [])
+        if not close_wallet_result:
+            raise ValueError(f'Failed to close wallet.')
+        return close_wallet_result
+
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [rpc_server_sessions])
