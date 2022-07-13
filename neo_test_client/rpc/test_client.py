@@ -53,8 +53,8 @@ class RpcBreakpoint:
 
 
 class TestClient:
-    def __init__(self, target_url: str, contract_scripthash: Hash160Str,
-                 wallet_address: str, wallet_path: str, wallet_password: str, signer: Signer = None,
+    def __init__(self, target_url: str, wallet_address: str, wallet_path: str, wallet_password: str,
+                 contract_scripthash: Hash160Str = Hash160Str.zero(), signer: Signer = None,
                  with_print=True, requests_session=requests.Session(), verbose_return=False,
                  function_default_relay=True, script_default_relay=False,
                  rpc_server_session: str = None):
