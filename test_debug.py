@@ -71,6 +71,10 @@ print(client.get_variable_names_and_values())
 print(client.debug_step_over())
 print(client.debug_step_over_source_code())
 print(client.debug_continue())
+print(client.get_contract_opcode_coverage())
+print(client.clear_contract_opcode_coverage())
+for k, v in client.get_contract_opcode_coverage().items():
+    assert v is False
 
 print(client.delete_assembly_breakpoints(0))
 print(client.delete_assembly_breakpoints())

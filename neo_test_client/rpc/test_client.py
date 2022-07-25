@@ -729,3 +729,13 @@ class TestClient:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("getvariablenamesandvalues", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
+    
+    def get_contract_opcode_coverage(self, scripthash: UInt160 = None) -> Dict[int, bool]:
+        scripthash = scripthash or self.contract_scripthash
+        result: Dict[str, bool] = self.meta_rpc_method_with_raw_result("getcontractopcodecoverage", [scripthash])['result']
+        return {int(k): v for k, v in result.items()}
+    
+    def clear_contract_opcode_coverage(self, scripthash: UInt160 = None) -> Dict[int, bool]:
+        scripthash = scripthash or self.contract_scripthash
+        result: Dict[str, bool] = self.meta_rpc_method_with_raw_result("clearcontractopcodecoverage", [scripthash])['result']
+        return {int(k): v for k, v in result.items()}
