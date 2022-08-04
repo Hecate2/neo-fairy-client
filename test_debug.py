@@ -31,7 +31,7 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
 rpc_server_session = 'debug'
 client = TestClient(target_url, wallet_address, wallet_path, wallet_password, with_print=True, rpc_server_session=rpc_server_session, signer=lender)
 client.open_fairy_wallet()
-client.new_snapshots_from_current_system(rpc_server_session)
+client.new_snapshots_from_current_system()
 client.set_gas_balance(100_0000_0000)
 client.contract_scripthash = client.virtual_deploy(nef_file, manifest)
 print(client.contract_scripthash)

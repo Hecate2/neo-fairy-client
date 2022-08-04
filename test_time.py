@@ -31,7 +31,7 @@ with open('getTimeContract.manifest.json', 'r') as f:
 session = 'Runtime.Time'
 client = TestClient(target_url, wallet_address, wallet_path, wallet_password, signer=signer,
                     with_print=True, rpc_server_session=session)
-print(client.new_snapshots_from_current_system(session))
+print(client.new_snapshots_from_current_system())
 print(client.list_snapshots())
 
 client.open_fairy_wallet()
@@ -40,11 +40,11 @@ anyupdate_short_safe_hash = client.virtual_deploy(anyupdate_nef_file, anyupdate_
 test_nopht_d_hash = client.virtual_deploy(test_nopht_d_nef, test_nopht_d_manifest)
 client.contract_scripthash = anyupdate_short_safe_hash
 
-timestamp_dict = client.get_snapshot_timestamp(session)
+timestamp_dict = client.get_snapshot_timestamp()
 timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session)
 print(timestamp_dict, timestamp_returned_from_contract)
 assert timestamp_dict[session] == 0
 print(client.set_snapshot_timestamp(int(time.time() + 86400) * 1000, session))
 print(timestamp_returned_from_contract := client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session))
-print(timestamp_dict := client.get_snapshot_timestamp(session))
+print(timestamp_dict := client.get_snapshot_timestamp())
 assert timestamp_dict[session] == timestamp_returned_from_contract

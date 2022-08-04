@@ -475,12 +475,11 @@ class TestClient:
         return close_wallet_result
 
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
+        rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+        if rpc_server_sessions is None:
+            raise ValueError('No RpcServer session specified')
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [rpc_server_sessions])
-        if rpc_server_sessions is None:
-            if self.rpc_server_session:
-                return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [self.rpc_server_session])
-            raise ValueError('No RpcServer session specified')
         return self.meta_rpc_method("newsnapshotsfromcurrentsystem", rpc_server_sessions)
     
     def delete_snapshots(self, rpc_server_sessions: Union[List[str], str]):
@@ -498,16 +497,36 @@ class TestClient:
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
     def set_snapshot_timestamp(self, timestamp_ms: int, rpc_server_session: str = None) -> Dict[str, int]:
-        if rpc_server_session is None:
-            if self.rpc_server_session is None:
-                raise ValueError('No RpcServer session specified')
-            rpc_server_session = self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.rpc_server_session
         return self.meta_rpc_method("setsnapshottimestamp", [rpc_server_session, timestamp_ms])
     
-    def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str]) -> Dict[str, int]:
+    def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
+        rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+        if rpc_server_sessions is None:
+            raise ValueError('No RpcServer session specified')
         if type(rpc_server_sessions) is str:
             return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
         return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
+
+    # def set_snapshot_random(self, designated_random: Union[int, None], rpc_server_session: str = None) -> Dict[str, Union[int, None]]:
+    #     """
+    #     @param designated_random: use None to delete the designated random and let Fairy choose any random number
+    #     """
+    #     rpc_server_session = rpc_server_session or self.rpc_server_session
+    #     result = self.meta_rpc_method("setsnapshotrandom", [rpc_server_session, designated_random])
+    #     for k in result:
+    #         result[k] = None if result[k] is None else int(result[k])
+    #     return result
+    #
+    # def get_snapshot_random(self, rpc_server_sessions: Union[List[str], str] = None) -> Dict[str, int]:
+    #     rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+    #     if type(rpc_server_sessions) is str:
+    #         result = self.meta_rpc_method("getsnapshotrandom", [rpc_server_sessions])
+    #     else:
+    #         result = self.meta_rpc_method("getsnapshotrandom", rpc_server_sessions)
+    #     for k in result:
+    #         result[k] = None if result[k] is None else int(result[k])
+    #     return result
 
     def virtual_deploy(self, nef: bytes, manifest: str, rpc_server_session: str = None) -> Hash160Str:
         rpc_server_session = rpc_server_session or self.rpc_server_session

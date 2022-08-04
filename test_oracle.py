@@ -24,7 +24,7 @@ client = TestClient(target_url, wallet_address, wallet_path, wallet_password, rp
 client.open_fairy_wallet()
 
 client.delete_snapshots(client.list_snapshots())
-client.new_snapshots_from_current_system(rpc_server_session)
+client.new_snapshots_from_current_system()
 client.set_gas_balance(100_0000_0000)
 client.contract_scripthash = client.virtual_deploy(nef_file, manifest)
 print(client.contract_scripthash)
