@@ -41,14 +41,15 @@ nftloan_scripthash = lender_client.virtual_deploy(nef_file, manifest)
 print(test_nopht_d_hash, nftloan_scripthash)
 assert nftloan_scripthash == lender_client.virtual_deploy(nef_file, manifest)
 lender_client.contract_scripthash = test_nopht_d_hash
-lender_client.close_fairy_wallet()
 print(lender_client.invokefunction('totalSupply'))
 print(lender_client.invokefunction('balanceOf', params=[wallet_scripthash]))
 print(lender_client.invokefunction('balanceOf', params=[wallet_scripthash, 1]))
 lender_client.contract_scripthash = nftloan_scripthash
 assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
+lender_client.put_storage_with_session(2, 100)
+assert lender_client.get_storage_with_session(2, contract_scripthash=nftloan_scripthash, rpc_server_session=rpc_server_session) == lender_client.find_storage_with_session(2, contract_scripthash=nftloan_scripthash, rpc_server_session=rpc_server_session) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(100)).decode()}
 lender_client.put_storage_with_session(2, 0)
 assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():None}
 lender_client.put_storage_with_session(2, 1)
-assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
+assert lender_client.find_storage_with_session(0) == lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
 print(lender_client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]))

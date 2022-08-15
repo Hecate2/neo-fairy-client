@@ -549,7 +549,15 @@ class TestClient:
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("getstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
 
+    def find_storage_with_session(self, key: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        contract_scripthash = contract_scripthash or self.contract_scripthash
+        return self.meta_rpc_method("findstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
+
     def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+        """
+        :param value==0 deletes the key-value pair
+        """
         rpc_server_session = rpc_server_session or self.rpc_server_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("putstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
