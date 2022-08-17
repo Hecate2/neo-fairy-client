@@ -4,8 +4,8 @@ import json
 import requests
 from retry import retry
 
-from neo_test_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
-from neo_test_client.utils.interpreters import Interpreter
+from neo_fairy_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
+from neo_fairy_client.utils.interpreters import Interpreter
 from neo3.core.types import UInt160, UInt256
 from neo3.contracts import NeoToken, GasToken
 from neo3vm import VMState

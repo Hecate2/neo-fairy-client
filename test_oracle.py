@@ -1,7 +1,7 @@
 import base64
-from neo_test_client.rpc import TestClient
-from neo_test_client.utils.types import Hash160Str, Signer, WitnessScope
-from neo_test_client.utils.interpreters import Interpreter
+from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
+from neo_fairy_client.utils.interpreters import Interpreter
 
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'

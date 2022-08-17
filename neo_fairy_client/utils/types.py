@@ -1,6 +1,6 @@
 from typing import List, Union
 from enum import Enum
-from neo_test_client.utils.timers import gen_timestamp_and_date_str_in_seconds, gen_timestamp_and_date_str_in_days
+from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds, gen_timestamp_and_date_str_in_days
 
 import time
 from neo3.core.types import UInt160, UInt256

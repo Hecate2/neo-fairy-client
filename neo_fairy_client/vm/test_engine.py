@@ -4,7 +4,7 @@ import os
 from functools import partial
 from typing import List, Union, Tuple, Any, Callable
 
-from neo_test_client.utils.types import Hash160Str, Hash256Str, EngineResultInterpreter
+from neo_fairy_client.utils.types import Hash160Str, Hash256Str, EngineResultInterpreter
 
 from neo3 import vm, contracts, blockchain
 from neo3.contracts import ApplicationEngine, interop

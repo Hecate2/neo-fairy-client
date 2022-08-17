@@ -1,7 +1,7 @@
 from typing import List
 from math import log
 import base64
-from neo_test_client.utils.types import Hash160Str, UInt160
+from neo_fairy_client.utils.types import Hash160Str, UInt160
 
 
 class Interpreter:
