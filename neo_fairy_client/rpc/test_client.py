@@ -23,7 +23,7 @@ request_timeout = None  # 20
 
 class RpcBreakpoint:
     def __init__(self, state: str, break_reason: str, scripthash: Union[str, Hash160Str], contract_name: str,
-                 instruction_pointer: int, source_filename: str = None, source_line_num: int = None,
+                 instruction_pointer: int, source_filename: str = None, source_line_num: int = None, source_content = None,
                  exception: str = None, stack: Any = None):
         self.state: VMState = {'BREAK': VMState.BREAK, 'FAULT': VMState.FAULT, 'HALT': VMState.HALT, 'NONE': VMState.NONE}[state]
         self.break_reason = break_reason
@@ -34,6 +34,7 @@ class RpcBreakpoint:
         self.instruction_pointer = instruction_pointer
         self.source_filename = source_filename
         self.source_line_num = source_line_num
+        self.source_content = source_content
         self.exception = exception
         self.stack = stack
         
@@ -41,15 +42,15 @@ class RpcBreakpoint:
     def from_raw_result(cls, result: Dict):
         result = result['result']
         return cls(result['state'], result['breakreason'], result['scripthash'], result['contractname'],
-                   result['instructionpointer'], result['sourcefilename'], result['sourcelinenum'])
+                   result['instructionpointer'], result['sourcefilename'], result['sourcelinenum'], result['sourcecontent'])
     
     def __repr__(self):
         if self.state == VMState.HALT:
             return f'''RpcBreakpoint {self.state} {self.stack}'''
         if self.source_filename and self.source_line_num:
-            return f'''RpcBreakpoint {self.state} {self.source_filename} line {self.source_line_num}'''
+            return f'''RpcBreakpoint {self.state} {self.source_filename} line {self.source_line_num} instructionPointer {self.instruction_pointer}: {self.source_content}'''
         else:
-            return f'''RpcBreakpoint {self.state} {self.contract_name} instructionPointer {self.instruction_pointer}'''
+            return f'''RpcBreakpoint {self.state} {self.contract_name} instructionPointer {self.instruction_pointer};'''
 
 
 class TestClient:
@@ -681,7 +682,7 @@ class TestClient:
             [rpc_server_session, relay or (relay is None and self.function_default_relay)] + parameters)
         result = raw_result['result']
         return RpcBreakpoint(result['state'], result['breakreason'], result['scripthash'], result['contractname'], result['instructionpointer'],
-                             result['sourcefilename'], result['sourcelinenum'], result['exception'], self.parse_stack_from_raw_result(raw_result))
+                             result['sourcefilename'], result['sourcelinenum'], result['sourcecontent'], exception=result['exception'], stack=self.parse_stack_from_raw_result(raw_result))
 
     def debug_function_with_session(self, operation: str,
                                         params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
@@ -692,32 +693,32 @@ class TestClient:
             params=params, signers=signers, relay=relay, do_not_raise_on_result=do_not_raise_on_result,
             with_print=with_print, rpc_server_session=rpc_server_session)
 
-    def debug_continue(self, rpc_server_session: str = None) -> Any:
+    def debug_continue(self, rpc_server_session: str = None) -> RpcBreakpoint:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugcontinue", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_into(self, rpc_server_session: str = None) -> Any:
+    def debug_step_into(self, rpc_server_session: str = None) -> RpcBreakpoint:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugstepinto", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_out(self, rpc_server_session: str = None) -> Any:
+    def debug_step_out(self, rpc_server_session: str = None) -> RpcBreakpoint:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugstepout", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_over(self, rpc_server_session: str = None) -> Any:
+    def debug_step_over(self, rpc_server_session: str = None) -> RpcBreakpoint:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugstepover", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_over_source_code(self, rpc_server_session: str = None) -> Any:
+    def debug_step_over_source_code(self, rpc_server_session: str = None) -> RpcBreakpoint:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugstepoversourcecode", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_over_assembly(self, rpc_server_session: str = None) -> Any:
+    def debug_step_over_assembly(self, rpc_server_session: str = None) -> RpcBreakpoint:
         rpc_server_session = rpc_server_session or self.rpc_server_session
         result = self.meta_rpc_method_with_raw_result("debugstepoverassembly", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)

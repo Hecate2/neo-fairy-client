@@ -2,6 +2,7 @@ import json
 from neo_fairy_client.rpc import TestClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds
+from neo3vm import VMState
 
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
@@ -69,8 +70,13 @@ print(client.get_variable_value_by_name("flashLoanPrice"))
 print(client.get_variable_names_and_values())
 
 print(client.debug_step_over())
-print(client.debug_step_over_source_code())
-print(client.debug_continue())
+print(rpc_breakpoint := client.debug_step_over_source_code())
+assert rpc_breakpoint.state == VMState.BREAK
+print(rpc_breakpoint := client.debug_continue())
+assert rpc_breakpoint.state == VMState.FAULT  # we did not deployed NophtD here
+assert client.previous_raw_result['result']['sourcefilename'] == 'NFTLoan.cs'
+assert client.previous_raw_result['result']['sourcelinenum'] == 247
+assert 'Called Contract Does Not Exist' in client.previous_raw_result['result']['exception']
 print(client.get_contract_opcode_coverage())
 print(client.clear_contract_opcode_coverage())
 for k, v in client.get_contract_opcode_coverage().items():
