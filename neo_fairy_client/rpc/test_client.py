@@ -90,6 +90,8 @@ class TestClient:
         self.function_default_relay = function_default_relay
         self.script_default_relay = script_default_relay
         self.rpc_server_session = rpc_server_session
+        
+        self.open_fairy_wallet()
     
     @staticmethod
     def request_body_builder(method, parameters: List):
@@ -509,25 +511,25 @@ class TestClient:
             return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
         return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
 
-    # def set_snapshot_random(self, designated_random: Union[int, None], rpc_server_session: str = None) -> Dict[str, Union[int, None]]:
-    #     """
-    #     @param designated_random: use None to delete the designated random and let Fairy choose any random number
-    #     """
-    #     rpc_server_session = rpc_server_session or self.rpc_server_session
-    #     result = self.meta_rpc_method("setsnapshotrandom", [rpc_server_session, designated_random])
-    #     for k in result:
-    #         result[k] = None if result[k] is None else int(result[k])
-    #     return result
-    #
-    # def get_snapshot_random(self, rpc_server_sessions: Union[List[str], str] = None) -> Dict[str, int]:
-    #     rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
-    #     if type(rpc_server_sessions) is str:
-    #         result = self.meta_rpc_method("getsnapshotrandom", [rpc_server_sessions])
-    #     else:
-    #         result = self.meta_rpc_method("getsnapshotrandom", rpc_server_sessions)
-    #     for k in result:
-    #         result[k] = None if result[k] is None else int(result[k])
-    #     return result
+    def set_snapshot_random(self, designated_random: Union[int, None], rpc_server_session: str = None) -> Dict[str, Union[int, None]]:
+        """
+        @param designated_random: use None to delete the designated random and let Fairy choose any random number
+        """
+        rpc_server_session = rpc_server_session or self.rpc_server_session
+        result = self.meta_rpc_method("setsnapshotrandom", [rpc_server_session, designated_random])
+        for k in result:
+            result[k] = None if result[k] is None else int(result[k])
+        return result
+
+    def get_snapshot_random(self, rpc_server_sessions: Union[List[str], str] = None) -> Dict[str, int]:
+        rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+        if type(rpc_server_sessions) is str:
+            result = self.meta_rpc_method("getsnapshotrandom", [rpc_server_sessions])
+        else:
+            result = self.meta_rpc_method("getsnapshotrandom", rpc_server_sessions)
+        for k, v in result.items():
+            result[k] = None if not v else int(v)
+        return result
 
     def virtual_deploy(self, nef: bytes, manifest: str, rpc_server_session: str = None) -> Hash160Str:
         rpc_server_session = rpc_server_session or self.rpc_server_session
@@ -563,12 +565,14 @@ class TestClient:
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("putstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
 
-    def set_neo_balance(self, balance: int, rpc_server_session: str = None, account: Hash160Str = None):
+    def set_neo_balance(self, balance: Union[int, float], rpc_server_session: str = None, account: Hash160Str = None):
+        balance = int(balance)
         rpc_server_session = rpc_server_session or self.rpc_server_session
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setneobalance", [rpc_server_session, account, balance])
 
-    def set_gas_balance(self, balance: int, rpc_server_session: str = None, account: Hash160Str = None):
+    def set_gas_balance(self, balance: Union[int, float], rpc_server_session: str = None, account: Hash160Str = None):
+        balance = int(balance)
         rpc_server_session = rpc_server_session or self.rpc_server_session
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setgasbalance", [rpc_server_session, account, balance])
