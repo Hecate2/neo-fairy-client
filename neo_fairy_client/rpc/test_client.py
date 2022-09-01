@@ -269,8 +269,12 @@ class TestClient:
             return result
         if not result['stack']:
             return result['stack']
-        result: List = result['stack'][0]
-        return parse_single_item(result)
+        stack: List = result['stack']
+        if len(stack) > 1:  # typically happens when we invoke a script calling a series of methods
+            return [parse_single_item(item) for item in stack]
+        else:  # if the stack has only 1 item, we simply return the item without a wrapping list
+            result: List = stack[0]
+            return parse_single_item(result)
     
     @classmethod
     def parse_params(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes]) -> Dict[str, str]:
