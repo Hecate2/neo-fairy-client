@@ -2,6 +2,7 @@ from typing import List, Union, Dict, Any
 import base64
 import json
 import requests
+
 from retry import retry
 
 from neo_fairy_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
@@ -58,7 +59,7 @@ class TestClient:
                  contract_scripthash: Hash160Str = Hash160Str.zero(), signer: Signer = None,
                  with_print=True, requests_session=requests.Session(), verbose_return=False,
                  function_default_relay=True, script_default_relay=False,
-                 rpc_server_session: str = None):
+                 rpc_server_session: str = None, verify_SSL: bool = True):
         """
 
         :param target_url: url to the rpc server affliated to neo-cli
@@ -90,8 +91,16 @@ class TestClient:
         self.function_default_relay = function_default_relay
         self.script_default_relay = script_default_relay
         self.rpc_server_session = rpc_server_session
+        self.verify_SSL = verify_SSL
+        if verify_SSL is False:
+            print('WARNING: Will ignore SSL certificate errors!')
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
-        self.open_fairy_wallet()
+        try:
+            self.open_fairy_wallet()
+        except:
+            print("WARNING: Failed to open fairy wallet!")
     
     @staticmethod
     def request_body_builder(method, parameters: List):
@@ -130,7 +139,7 @@ class TestClient:
     def meta_rpc_method(self, method: str, parameters: List, relay: bool = None, do_not_raise_on_result=False) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
-        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=request_timeout).text)
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=request_timeout, verify=self.verify_SSL).text)
         if 'error' in result:
             raise ValueError(result['error']['message'])
         if type(result['result']) is dict:
