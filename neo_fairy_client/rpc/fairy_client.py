@@ -74,10 +74,16 @@ class FairyClient:
         self.target_url: str = target_url
         self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
         self.requests_session: requests.Session = requests_session
-        self.wallet_address: str = wallet_address
-        wallet_scripthash = Hash160Str.from_address(wallet_address)
-        self.wallet_scripthash: Hash160Str = wallet_scripthash
-        self.signer: Signer = signer or Signer(wallet_scripthash)
+        if wallet_address:
+            self.wallet_address: str = wallet_address
+            wallet_scripthash = Hash160Str.from_address(wallet_address)
+            self.wallet_scripthash: Hash160Str = wallet_scripthash
+            self.signer: Signer = signer or Signer(wallet_scripthash)
+        else:
+            self.wallet_address = None
+            self.wallet_scripthash = None
+            self.signer = None
+            print('WARNING: No wallet address specified when building the fairy client!')
         self.wallet_path: Union[str, None] = wallet_path
         self.wallet_password: Union[str, None] = wallet_password
         self.previous_post_data = None
@@ -371,7 +377,7 @@ class FairyClient:
         if not params:
             params = []
         if not signers:
-            signers = [self.signer]
+            signers = [self.signer] if self.signer else []
         parameters = [
             str(scripthash),
             operation,
