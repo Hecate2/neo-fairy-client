@@ -30,7 +30,7 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
     dumpnef = f.read()
 
 fairy_session = 'debug'
-client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, with_print=True, fairy_session=fairy_session, signer=lender)
+client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, with_print=True, fairy_session=fairy_session, signers=lender)
 client.open_fairy_wallet()
 client.new_snapshots_from_current_system()
 client.set_gas_balance(100_0000_0000)

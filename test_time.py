@@ -29,7 +29,7 @@ with open('getTimeContract.manifest.json', 'r') as f:
     manifest = json.dumps(manifest_dict, separators=(',', ':'))
 
 session = 'Runtime.Time'
-client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, signer=signer,
+client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, signers=signer,
                      with_print=True, fairy_session=session)
 print(client.new_snapshots_from_current_system())
 print(client.list_snapshots())

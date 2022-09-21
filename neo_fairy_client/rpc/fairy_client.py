@@ -56,7 +56,7 @@ class RpcBreakpoint:
 
 class FairyClient:
     def __init__(self, target_url: str, wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
-                 contract_scripthash: Hash160Str = None, signer: Signer = None,
+                 contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer]] = [],
                  with_print=True, requests_session=requests.Session(), verbose_return=False,
                  function_default_relay=True, script_default_relay=False,
                  fairy_session: str = None, verify_SSL: bool = True):
@@ -75,14 +75,14 @@ class FairyClient:
         self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
         self.requests_session: requests.Session = requests_session
         if wallet_address:
-            self.wallet_address: str = wallet_address
+            self.wallet_address: Union[str, None] = wallet_address
             wallet_scripthash = Hash160Str.from_address(wallet_address)
-            self.wallet_scripthash: Hash160Str = wallet_scripthash
-            self.signer: Signer = signer or Signer(wallet_scripthash)
+            self.wallet_scripthash: Union[Hash160Str, None] = wallet_scripthash
+            self.signers: List[Signer] = self.to_list(signers) or [Signer(wallet_scripthash)]
         else:
             self.wallet_address = None
             self.wallet_scripthash = None
-            self.signer = None
+            self.signers: List[Signer] = []
             print('WARNING: No wallet address specified when building the fairy client!')
         self.wallet_path: Union[str, None] = wallet_path
         self.wallet_password: Union[str, None] = wallet_password
@@ -109,15 +109,15 @@ class FairyClient:
         except:
             print("WARNING: Failed to open fairy wallet!")
     
-    def assign_wallet_address(self, wallet_address: str, signer: Signer = None):
+    def assign_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
-        :param signer: Signer(wallet_scripthash or wallet_address). By Signer you can assign WitnessScope
+        :param signers: Signer(wallet_scripthash or wallet_address). By Signer you can assign WitnessScope
         """
         self.wallet_address: str = wallet_address
         wallet_scripthash = Hash160Str.from_address(wallet_address)
         self.wallet_scripthash: Hash160Str = wallet_scripthash
-        self.signer: Signer = signer or Signer(wallet_scripthash)
+        self.signers: List[Signer] = self.to_list(signers) or [Signer(wallet_scripthash)]
 
     @staticmethod
     def request_body_builder(method, parameters: List):
@@ -127,6 +127,10 @@ class FairyClient:
             "params": parameters,
             "id": 1,
         }, separators=(',', ':'))
+    
+    @staticmethod
+    def to_list(element: Any):
+        return element if element is list else [element]
     
     @staticmethod
     def bytes_to_UInt160(bytestring: bytes):
@@ -384,10 +388,8 @@ class FairyClient:
             else:
                 print(f'invokefunction {operation}')
         
-        if not params:
-            params = []
-        if not signers:
-            signers = [self.signer] if self.signer else []
+        params = params or []
+        signers = signers or self.signers
         parameters = [
             str(scripthash),
             operation,
@@ -414,17 +416,16 @@ class FairyClient:
                                                    with_print=with_print, rpc_server_session=rpc_server_session)
     
     def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay: bool = None,
-                     rpc_server_session: str = None) -> Any:
+                     fairy_session: str = None) -> Any:
         if type(script) is bytes:
             script: str = script.decode()
-        if not signers:
-            signers = [self.signer]
-        rpc_server_session = rpc_server_session or self.fairy_session
-        if rpc_server_session:
+        signers = signers or self.signers
+        fairy_session = fairy_session or self.fairy_session
+        if fairy_session:
             relay = relay or (relay is None and self.script_default_relay)
             result = self.meta_rpc_method(
                 'invokescriptwithsession',
-                [rpc_server_session, relay, script, list(map(lambda signer: signer.to_dict(), signers))],
+                [fairy_session, relay, script, list(map(lambda signer: signer.to_dict(), signers))],
                 relay=False)
         else:
             result = self.meta_rpc_method(
@@ -446,7 +447,7 @@ class FairyClient:
         :return:
         """
         if not signers:
-            signers = [self.signer]
+            signers = [self.signers]
         return self.meta_rpc_method('sendfrom', [
             asset_id.to_str(),
             from_address, to_address, value,
@@ -703,10 +704,8 @@ class FairyClient:
             else:
                 print(f'debugfunction {operation}')
     
-        if not params:
-            params = []
-        if not signers:
-            signers = [self.signer]
+        params = params or []
+        signers = signers or self.signers
         parameters = [
             str(scripthash),
             operation,
