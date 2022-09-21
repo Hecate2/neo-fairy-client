@@ -5,8 +5,8 @@ import requests
 
 from retry import retry
 
-from neo_fairy_client.utils.types import Hash160Str, Hash256Str, PublicKeyStr, Signer
-from neo_fairy_client.utils.interpreters import Interpreter
+from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
+from neo_fairy_client.utils import Interpreter
 from neo3.core.types import UInt160, UInt256
 from neo3.contracts import NeoToken, GasToken
 from neo3vm import VMState
@@ -109,6 +109,16 @@ class FairyClient:
         except:
             print("WARNING: Failed to open fairy wallet!")
     
+    def assign_wallet_address(self, wallet_address: str, signer: Signer = None):
+        """
+        :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
+        :param signer: Signer(wallet_scripthash or wallet_address). By Signer you can assign WitnessScope
+        """
+        self.wallet_address: str = wallet_address
+        wallet_scripthash = Hash160Str.from_address(wallet_address)
+        self.wallet_scripthash: Hash160Str = wallet_scripthash
+        self.signer: Signer = signer or Signer(wallet_scripthash)
+
     @staticmethod
     def request_body_builder(method, parameters: List):
         return json.dumps({
