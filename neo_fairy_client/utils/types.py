@@ -1,6 +1,7 @@
 from typing import List, Union
 from enum import Enum
 from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds, gen_timestamp_and_date_str_in_days
+from neo_fairy_client.utils.misc import to_list
 
 import time
 from neo3.core.types import UInt160, UInt256
@@ -121,19 +122,18 @@ class WitnessScope(Enum):
     CustomContracts = 'CustomContracts'
     CustomGroups = 'CustomGroups'
     Global = 'Global'
+    WitnessRules = 'WitnessRules'
 
 
 class Signer:
     def __init__(self, account: Union[Hash160Str, str], scopes: WitnessScope = WitnessScope.CalledByEntry,
-                 allowedcontracts: List[Hash160Str] = None, allowedgroups: List[str] = None):
+                 allowedcontracts: List[Hash160Str] = None, allowedgroups: List[PublicKeyStr] = None,
+                 rules: List = None):
         self.account: Hash160Str = account if type(account) is Hash160Str else Hash160Str.from_address(account)
         self.scopes: WitnessScope = scopes
-        if allowedcontracts is None:
-            allowedcontracts = []
-        self.allowedcontracts = [str(allowedcontract) for allowedcontract in allowedcontracts]
-        if allowedgroups is None:
-            allowedgroups = []
-        self.allowedgroups = allowedgroups
+        self.allowedcontracts = to_list(allowedcontracts) or []
+        self.allowedgroups = to_list(allowedgroups) or []
+        self.rules = to_list(rules) or []
     
     def to_dict(self):
         return {
@@ -141,6 +141,7 @@ class Signer:
             'scopes': self.scopes.value,
             'allowedcontracts': self.allowedcontracts,
             'allowedgroups': self.allowedgroups,
+            'rules': self.rules
         }
 
 

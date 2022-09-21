@@ -6,7 +6,7 @@ import requests
 from retry import retry
 
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
-from neo_fairy_client.utils import Interpreter
+from neo_fairy_client.utils import Interpreter, to_list
 from neo3.core.types import UInt160, UInt256
 from neo3.contracts import NeoToken, GasToken
 from neo3vm import VMState
@@ -78,7 +78,7 @@ class FairyClient:
             self.wallet_address: Union[str, None] = wallet_address
             wallet_scripthash = Hash160Str.from_address(wallet_address)
             self.wallet_scripthash: Union[Hash160Str, None] = wallet_scripthash
-            self.signers: List[Signer] = self.to_list(signers) or [Signer(wallet_scripthash)]
+            self.signers: List[Signer] = to_list(signers) or [Signer(wallet_scripthash)]
         else:
             self.wallet_address = None
             self.wallet_scripthash = None
@@ -117,7 +117,7 @@ class FairyClient:
         self.wallet_address: str = wallet_address
         wallet_scripthash = Hash160Str.from_address(wallet_address)
         self.wallet_scripthash: Hash160Str = wallet_scripthash
-        self.signers: List[Signer] = self.to_list(signers) or [Signer(wallet_scripthash)]
+        self.signers: List[Signer] = to_list(signers) or [Signer(wallet_scripthash)]
 
     @staticmethod
     def request_body_builder(method, parameters: List):
@@ -127,10 +127,6 @@ class FairyClient:
             "params": parameters,
             "id": 1,
         }, separators=(',', ':'))
-    
-    @staticmethod
-    def to_list(element: Any):
-        return element if element is list else [element]
     
     @staticmethod
     def bytes_to_UInt160(bytestring: bytes):
