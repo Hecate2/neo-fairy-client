@@ -1,5 +1,5 @@
 import base64
-from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_fairy_client.utils.interpreters import Interpreter
 
@@ -29,9 +29,9 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
 
 FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
-rpc_server_session = 'NophtD'
-lender_client = TestClient(target_url, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
-borrower_client = TestClient(target_url, borrower_address, borrower_wallet_path, wallet_password, contract_scripthash=anyupdate_short_safe_hash, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
+fairy_session = 'NophtD'
+lender_client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, fairy_session=fairy_session, signer=lender, with_print=True)
+borrower_client = FairyClient(target_url, borrower_address, borrower_wallet_path, wallet_password, contract_scripthash=anyupdate_short_safe_hash, fairy_session=fairy_session, signer=borrower, with_print=True)
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
 lender_client.open_fairy_wallet()
 lender_client.new_snapshots_from_current_system()
@@ -47,7 +47,7 @@ print(lender_client.invokefunction('balanceOf', params=[wallet_scripthash, 1]))
 lender_client.contract_scripthash = nftloan_scripthash
 assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(1)).decode()}
 lender_client.put_storage_with_session(2, 100)
-assert lender_client.get_storage_with_session(2, contract_scripthash=nftloan_scripthash, rpc_server_session=rpc_server_session) == lender_client.find_storage_with_session(2, contract_scripthash=nftloan_scripthash, rpc_server_session=rpc_server_session) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(100)).decode()}
+assert lender_client.get_storage_with_session(2, contract_scripthash=nftloan_scripthash, rpc_server_session=fairy_session) == lender_client.find_storage_with_session(2, contract_scripthash=nftloan_scripthash, rpc_server_session=fairy_session) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():base64.b64encode(Interpreter.int_to_bytes(100)).decode()}
 lender_client.put_storage_with_session(2, 0)
 assert lender_client.get_storage_with_session(2) == {base64.b64encode(Interpreter.int_to_bytes(2)).decode():None}
 lender_client.put_storage_with_session(2, 1)

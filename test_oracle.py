@@ -1,5 +1,5 @@
 import base64
-from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_fairy_client.utils.interpreters import Interpreter
 
@@ -18,8 +18,8 @@ with open('../neo-fairy-oracle/oracle-demo/bin/sc/oracle-demo.nefdbgnfo', 'rb') 
 with open('../neo-fairy-oracle/oracle-demo/bin/sc/oracle-demo.nef.txt', 'r') as f:
     dumpnef = f.read()
 
-rpc_server_session = 'oracle'
-client = TestClient(target_url, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, with_print=True)
+fairy_session = 'oracle'
+client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, fairy_session=fairy_session, with_print=True)
 
 client.open_fairy_wallet()
 

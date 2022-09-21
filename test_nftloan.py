@@ -1,5 +1,5 @@
 import json
-from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds
 
@@ -35,9 +35,9 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
 
 FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
-rpc_server_session = 'NophtD'
-lender_client = TestClient(target_url, wallet_address, wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=lender, with_print=True)
-borrower_client = TestClient(target_url, borrower_address, borrower_wallet_path, wallet_password, rpc_server_session=rpc_server_session, signer=borrower, with_print=True)
+fairy_session = 'NophtD'
+lender_client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, fairy_session=fairy_session, signer=lender, with_print=True)
+borrower_client = FairyClient(target_url, borrower_address, borrower_wallet_path, wallet_password, fairy_session=fairy_session, signer=borrower, with_print=True)
 lender_client.open_fairy_wallet()
 print('#### CHECKLIST BEFORE TEST')
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
@@ -62,7 +62,7 @@ lender_client.invokefunction('putStorage', params=[0x02, 1])
 
 
 def query_all_rental(client=lender_client, external_token_id=1, internal_token_id=1, timestamp: int = None):
-    print(f'client rpc session: {client.rpc_server_session}')
+    print(f'client rpc session: {client.fairy_session}')
     with_print, function_default_relay = client.with_print, client.function_default_relay
     client.with_print, client.function_default_relay = False, False
     print('====listRegisteredRentalByToken')
@@ -119,12 +119,12 @@ print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'lis
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getInternalTokenId', [test_nopht_d_hash, 1]]))
 
 borrow_timestamp, _ = gen_timestamp_and_date_str_in_seconds(0)
-lender_client.set_snapshot_timestamp(borrow_timestamp, rpc_server_session)
+lender_client.set_snapshot_timestamp(borrow_timestamp, fairy_session)
 
-rpc_session_correct_payback = rpc_server_session + " borrow"
-borrower_client.copy_snapshot(rpc_server_session, rpc_session_correct_payback)
-borrower_client.rpc_server_session = rpc_session_correct_payback
-lender_client.rpc_server_session = rpc_session_correct_payback
+fairy_session_correct_payback = fairy_session + " borrow"
+borrower_client.copy_snapshot(fairy_session, fairy_session_correct_payback)
+borrower_client.fairy_session = fairy_session_correct_payback
+lender_client.fairy_session = fairy_session_correct_payback
 rental_period = 16000
 print(execution_timestamp := borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 15, 1, rental_period]]))
 assert execution_timestamp == borrow_timestamp
@@ -135,7 +135,7 @@ print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance
 query_all_rental(client=borrower_client, timestamp=borrow_timestamp)
 
 borrow_timestamp2 = borrow_timestamp + 100
-borrower_client.set_snapshot_timestamp(borrow_timestamp2, rpc_session_correct_payback)
+borrower_client.set_snapshot_timestamp(borrow_timestamp2, fairy_session_correct_payback)
 assert borrow_timestamp2 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 30, test_nopht_d_hash, 1, rental_period - 100]])
 # cannot borrow an amount <= 0
 assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 0, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
@@ -158,11 +158,11 @@ assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_fi
 assert borrower_client.get_gas_balance() - initial_borrower_gas == -250  # +50 collateral
 query_all_rental()
 
-rpc_session_loan_expired = rpc_server_session + " payback expired"
-borrower_client.copy_snapshot(rpc_session_correct_payback, rpc_session_loan_expired)
-borrower_client.rpc_server_session = rpc_session_loan_expired
-lender_client.rpc_server_session = rpc_session_loan_expired
-borrower_client.set_snapshot_timestamp(payback_timestamp + 10, rpc_session_loan_expired)
+fairy_session_loan_expired = fairy_session + " payback expired"
+borrower_client.copy_snapshot(fairy_session_correct_payback, fairy_session_loan_expired)
+borrower_client.fairy_session = fairy_session_loan_expired
+lender_client.fairy_session = fairy_session_loan_expired
+borrower_client.set_snapshot_timestamp(payback_timestamp + 10, fairy_session_loan_expired)
 
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'closeNextRental', [wallet_scripthash, 1, borrower_scripthash, borrow_timestamp2]]))
 print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)

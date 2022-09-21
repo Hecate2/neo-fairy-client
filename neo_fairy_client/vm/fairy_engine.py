@@ -16,7 +16,7 @@ from neo3.storage import StorageContext
 from neo3.contracts import NeoToken, GasToken
 neo, gas = NeoToken(), GasToken()
 
-class TestEngine:
+class FairyEngine:
     NO_SIGNER = 'NO_SIGNER'
     Prefix_Account = 20
     Number_Prefix = b'\x04'

@@ -54,12 +54,12 @@ class RpcBreakpoint:
             return f'''RpcBreakpoint {self.state} {self.contract_name} instructionPointer {self.instruction_pointer};'''
 
 
-class TestClient:
-    def __init__(self, target_url: str, wallet_address: str, wallet_path: str, wallet_password: str,
-                 contract_scripthash: Hash160Str = Hash160Str.zero(), signer: Signer = None,
+class FairyClient:
+    def __init__(self, target_url: str, wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
+                 contract_scripthash: Hash160Str = None, signer: Signer = None,
                  with_print=True, requests_session=requests.Session(), verbose_return=False,
                  function_default_relay=True, script_default_relay=False,
-                 rpc_server_session: str = None, verify_SSL: bool = True):
+                 fairy_session: str = None, verify_SSL: bool = True):
         """
 
         :param target_url: url to the rpc server affliated to neo-cli
@@ -71,27 +71,28 @@ class TestClient:
             This is to avoid reading previous_result for concurrency safety.
             For concurrency, set verbose_return=True
         """
-        self.target_url = target_url
-        self.contract_scripthash = contract_scripthash
-        self.requests_session = requests_session
-        self.wallet_address = wallet_address
+        self.target_url: str = target_url
+        self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
+        self.requests_session: requests.Session = requests_session
+        self.wallet_address: str = wallet_address
         wallet_scripthash = Hash160Str.from_address(wallet_address)
-        self.wallet_scripthash = wallet_scripthash
-        self.signer = signer or Signer(wallet_scripthash)
-        self.wallet_path = wallet_path
-        self.wallet_password = wallet_password
+        self.wallet_scripthash: Hash160Str = wallet_scripthash
+        self.signer: Signer = signer or Signer(wallet_scripthash)
+        self.wallet_path: Union[str, None] = wallet_path
+        self.wallet_password: Union[str, None] = wallet_password
         self.previous_post_data = None
-        self.with_print = with_print
-        self.previous_raw_result = None
-        self.previous_result = None
-        self.previous_txBase64Str = None
-        self.previous_gas_consumed: int = None
-        self.previous_network_fee: int = None
-        self.verbose_return = verbose_return
-        self.function_default_relay = function_default_relay
-        self.script_default_relay = script_default_relay
-        self.rpc_server_session = rpc_server_session
-        self.verify_SSL = verify_SSL
+        self.with_print: bool = with_print
+        self.previous_raw_result: Union[dict, None] = None
+        self.previous_result: Any = None
+        self.previous_txBase64Str: Union[str, None] = None
+        self.previous_gas_consumed: Union[int, None] = None
+        self.previous_network_fee: Union[int, None] = None
+        self.verbose_return: bool = verbose_return
+        self.function_default_relay: bool = function_default_relay
+        self.script_default_relay: bool = script_default_relay
+        self.fairy_session: Union[str, None] = fairy_session
+        self.verify_SSL: bool = verify_SSL
+        self.request_timeout: Union[int, None] = request_timeout
         if verify_SSL is False:
             print('WARNING: Will ignore SSL certificate errors!')
             import urllib3
@@ -129,7 +130,7 @@ class TestClient:
     def meta_rpc_method_with_raw_result(self, method: str, parameters: List) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
-        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=request_timeout).text)
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.request_timeout).text)
         if 'error' in result:
             raise ValueError(result['error'])
         self.previous_raw_result = result
@@ -139,7 +140,7 @@ class TestClient:
     def meta_rpc_method(self, method: str, parameters: List, relay: bool = None, do_not_raise_on_result=False) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
-        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=request_timeout, verify=self.verify_SSL).text)
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.request_timeout, verify=self.verify_SSL).text)
         if 'error' in result:
             raise ValueError(result['error']['message'])
         if type(result['result']) is dict:
@@ -360,7 +361,7 @@ class TestClient:
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         if self.with_print and with_print:
             if rpc_server_session:
                 print(f'{rpc_server_session}::invokefunction {operation}')
@@ -389,6 +390,8 @@ class TestClient:
     def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160]] = None,
                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
                        rpc_server_session: str = None) -> Any:
+        if self.contract_scripthash is None or self.contract_scripthash == Hash160Str.zero():
+            raise ValueError(f'Please set client.contract_scripthash before invoking function. Got {self.contract_scripthash}')
         return self.invokefunction_of_any_contract(self.contract_scripthash, operation, params,
                                                    signers=signers, relay=relay or (relay is None and self.function_default_relay),
                                                    do_not_raise_on_result=do_not_raise_on_result,
@@ -400,7 +403,7 @@ class TestClient:
             script: str = script.decode()
         if not signers:
             signers = [self.signer]
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         if rpc_server_session:
             relay = relay or (relay is None and self.script_default_relay)
             result = self.meta_rpc_method(
@@ -491,7 +494,7 @@ class TestClient:
         return close_wallet_result
 
     def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
-        rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+        rpc_server_sessions = rpc_server_sessions or self.fairy_session
         if rpc_server_sessions is None:
             raise ValueError('No RpcServer session specified')
         if type(rpc_server_sessions) is str:
@@ -513,11 +516,11 @@ class TestClient:
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
     def set_snapshot_timestamp(self, timestamp_ms: Union[int, None], rpc_server_session: str = None) -> Dict[str, int]:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         return self.meta_rpc_method("setsnapshottimestamp", [rpc_server_session, timestamp_ms])
     
     def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
-        rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+        rpc_server_sessions = rpc_server_sessions or self.fairy_session
         if rpc_server_sessions is None:
             raise ValueError('No RpcServer session specified')
         if type(rpc_server_sessions) is str:
@@ -528,14 +531,14 @@ class TestClient:
         """
         @param designated_random: use None to delete the designated random and let Fairy choose any random number
         """
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method("setsnapshotrandom", [rpc_server_session, designated_random])
         for k in result:
             result[k] = None if result[k] is None else int(result[k])
         return result
 
     def get_snapshot_random(self, rpc_server_sessions: Union[List[str], str] = None) -> Dict[str, int]:
-        rpc_server_sessions = rpc_server_sessions or self.rpc_server_session
+        rpc_server_sessions = rpc_server_sessions or self.fairy_session
         if type(rpc_server_sessions) is str:
             result = self.meta_rpc_method("getsnapshotrandom", [rpc_server_sessions])
         else:
@@ -545,7 +548,7 @@ class TestClient:
         return result
 
     def virtual_deploy(self, nef: bytes, manifest: str, rpc_server_session: str = None) -> Hash160Str:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         return Hash160Str(self.meta_rpc_method("virtualdeploy", [rpc_server_session, base64.b64encode(nef).decode(), manifest])[rpc_server_session])
 
     @staticmethod
@@ -561,12 +564,12 @@ class TestClient:
         return key
 
     def get_storage_with_session(self, key: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("getstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
 
     def find_storage_with_session(self, key: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("findstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
 
@@ -574,26 +577,26 @@ class TestClient:
         """
         :param value==0 deletes the key-value pair
         """
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("putstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
 
     def set_neo_balance(self, balance: Union[int, float], rpc_server_session: str = None, account: Hash160Str = None):
         balance = int(balance)
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setneobalance", [rpc_server_session, account, balance])
 
     def set_gas_balance(self, balance: Union[int, float], rpc_server_session: str = None, account: Hash160Str = None):
         balance = int(balance)
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setgasbalance", [rpc_server_session, account, balance])
 
     def set_nep17_balance(self, contract: Hash160Str, balance: int, rpc_server_session: str = None, account: Hash160Str = None, byte_prefix: int = 1):
         if byte_prefix >= 256 or byte_prefix < 0:
             raise ValueError(f'Only 0<=byte_prefix<=255 accepted. Got {byte_prefix}')
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setnep17balance", [rpc_server_session, contract, account, balance, byte_prefix])
 
@@ -677,7 +680,7 @@ class TestClient:
                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, rpc_server_session: str = None) -> Any:
         scripthash = scripthash or self.contract_scripthash
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         if self.with_print and with_print:
             if rpc_server_session:
                 print(f'{rpc_server_session}::debugfunction {operation}')
@@ -711,67 +714,67 @@ class TestClient:
             with_print=with_print, rpc_server_session=rpc_server_session)
 
     def debug_continue(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugcontinue", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
     def debug_step_into(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepinto", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
     def debug_step_out(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepout", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
     def debug_step_over(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepover", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
     def debug_step_over_source_code(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepoversourcecode", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
     def debug_step_over_assembly(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepoverassembly", [rpc_server_session])
         return RpcBreakpoint.from_raw_result(result)
 
     def get_local_variables(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getlocalvariables", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
     def get_arguments(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getarguments", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
     def get_static_fields(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getstaticfields", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
     def get_evaluation_stack(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getevaluationstack", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
     def get_instruction_pointer(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getinstructionpointer", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)[0]
 
     def get_variable_value_by_name(self, variable_name: str, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getvariablevaluebyname", [rpc_server_session, variable_name, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
     def get_variable_names_and_values(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.rpc_server_session
+        rpc_server_session = rpc_server_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("getvariablenamesandvalues", [rpc_server_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
     

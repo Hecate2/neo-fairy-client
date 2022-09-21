@@ -1,6 +1,6 @@
 import json
 import time
-from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 
 target_url = 'http://127.0.0.1:16868'
@@ -29,8 +29,8 @@ with open('getTimeContract.manifest.json', 'r') as f:
     manifest = json.dumps(manifest_dict, separators=(',', ':'))
 
 session = 'Runtime.Time'
-client = TestClient(target_url, wallet_address, wallet_path, wallet_password, signer=signer,
-                    with_print=True, rpc_server_session=session)
+client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, signer=signer,
+                     with_print=True, fairy_session=session)
 print(client.new_snapshots_from_current_system())
 print(client.list_snapshots())
 

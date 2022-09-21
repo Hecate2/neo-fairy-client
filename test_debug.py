@@ -1,5 +1,5 @@
 import json
-from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds
 from neo3vm import VMState
@@ -29,8 +29,8 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nefdbgnfo', 'rb') as f:
 with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
     dumpnef = f.read()
 
-rpc_server_session = 'debug'
-client = TestClient(target_url, wallet_address, wallet_path, wallet_password, with_print=True, rpc_server_session=rpc_server_session, signer=lender)
+fairy_session = 'debug'
+client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, with_print=True, fairy_session=fairy_session, signer=lender)
 client.open_fairy_wallet()
 client.new_snapshots_from_current_system()
 client.set_gas_balance(100_0000_0000)
@@ -87,4 +87,4 @@ print(client.delete_assembly_breakpoints())
 print(client.delete_source_code_breakpoints(['DivisibleNep11Token.cs', 100]))
 print(client.delete_source_code_breakpoints([]))
 print(client.delete_debug_info(client.contract_scripthash))
-print(client.delete_snapshots(rpc_server_session))
+print(client.delete_snapshots(fairy_session))

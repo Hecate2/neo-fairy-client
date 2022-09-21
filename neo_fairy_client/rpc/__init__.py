@@ -1,1 +1,1 @@
-from neo_fairy_client.rpc.test_client import TestClient
+from neo_fairy_client.rpc.fairy_client import FairyClient, RpcBreakpoint

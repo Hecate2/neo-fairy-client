@@ -1,4 +1,4 @@
-from neo_fairy_client.rpc import TestClient
+from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str
 
 target_url = 'http://127.0.0.1:16868'
@@ -13,7 +13,7 @@ bneo = Hash160Str('0x48c40d4666f93408be1bef038b6722404d9a4c2a')  # decimal 8
 gas = Hash160Str('0xd2a4cff31913016155e38e474a2c06d08be276cf')  # decimal 8
 fusdt = Hash160Str('0xcd48b160c1bbc9d74997b803b9a7ad50a4bef020')  # decimal 6
 
-client = TestClient(target_url, wallet_address, wallet_path, wallet_password, function_default_relay=False, script_default_relay=False)
+client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, function_default_relay=False, script_default_relay=False)
 client.contract_scripthash = flamingo_swap_router
 # print(swap_pairs := client.invokefunction_of_any_contract(flamingo_swap_factory, 'getAllExchangePair', []))
 # print(swap_pairs := client.invokefunction_of_any_contract(flamingo_swap_factory, 'getExchangePair', [gas, fusdt]))
