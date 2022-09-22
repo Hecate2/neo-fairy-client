@@ -3,8 +3,6 @@ import base64
 import json
 import requests
 
-from retry import retry
-
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
 from neo_fairy_client.utils import Interpreter, to_list
 from neo3.core.types import UInt160, UInt256
@@ -19,7 +17,8 @@ RequestExceptions = (
     requests.HTTPError,
     requests.Timeout,
 )
-request_timeout = None  # 20
+default_request_timeout = None  # 20
+default_requests_session = requests.Session()
 
 
 class RpcBreakpoint:
@@ -55,21 +54,33 @@ class RpcBreakpoint:
 
 
 class FairyClient:
-    def __init__(self, target_url: str = 'http://localhost:16868', wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
+    def __init__(self, target_url: str = 'http://localhost:16868',
+                 wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
                  contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
-                 with_print=True, requests_session=requests.Session(), verbose_return=False,
-                 function_default_relay=True, script_default_relay=False,
-                 fairy_session: str = None, verify_SSL: bool = True):
+                 fairy_session: str = None, function_default_relay=True, script_default_relay=False,
+                 with_print=True, verbose_return=False, verify_SSL: bool = True,
+                 requests_session: requests.Session = default_requests_session,
+                 requests_timeout: Union[int, None] = default_request_timeout):
         """
-
+        Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
+        Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
+        Use fairy_session strings to name your snapshots.
         :param target_url: url to the rpc server affliated to neo-cli
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
         :param wallet_path: 'wallets/dev.json'
         :param wallet_password: '12345678'
-        :param requests_session: requests.Session
-        :param verbose_return: return result, raw_result, post_data.
+        :param signers: by default, which account(s) will sign the transactions with which scope
+            https://docs.neo.org/docs/en-us/basic/concept/transaction.html#signature-scope
+        :param fairy_session: Any string designated by you to name your session which contains snapshot.
+            If None, will use normal RPC without session string. No snapshot will be used or recorded
+        :param function_default_relay: if True, will write your transaction to chain or fairy snapshot
+        :param script_default_relay: if True, will write your transaction to chain or fairy snapshot
+        :param with_print: print results for each RPC call
+        :param verbose_return: return (parsed_result, raw_result, post_data) if True. return parsed result if False.
             This is to avoid reading previous_result for concurrency safety.
             For concurrency, set verbose_return=True
+        :param requests_session: requests.Session
+        :param requests_timeout: raise Exceptions if request not completed in that many seconds. None for no limit
         """
         self.target_url: str = target_url
         self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
@@ -98,7 +109,7 @@ class FairyClient:
         self.script_default_relay: bool = script_default_relay
         self.fairy_session: Union[str, None] = fairy_session
         self.verify_SSL: bool = verify_SSL
-        self.request_timeout: Union[int, None] = request_timeout
+        self.requests_timeout: Union[int, None] = requests_timeout
         if verify_SSL is False:
             print('WARNING: Will ignore SSL certificate errors!')
             import urllib3
@@ -107,7 +118,7 @@ class FairyClient:
         try:
             self.open_fairy_wallet()
         except:
-            print("WARNING: Failed to open fairy wallet!")
+            print(f"WARNING: Failed to open fairy wallet at {target_url} at path `{wallet_path}`!")
     
     def assign_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
@@ -142,11 +153,10 @@ class FairyClient:
                     processed_struct.append(base64.b64decode(value['value']))
         return processed_struct
     
-    @retry(RequestExceptions, tries=2, logger=None)
     def meta_rpc_method_with_raw_result(self, method: str, parameters: List) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
-        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.request_timeout).text)
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.requests_timeout).text)
         if 'error' in result:
             raise ValueError(result['error'])
         self.previous_raw_result = result
@@ -156,7 +166,7 @@ class FairyClient:
     def meta_rpc_method(self, method: str, parameters: List, relay: bool = None, do_not_raise_on_result=False) -> Any:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
-        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.request_timeout, verify=self.verify_SSL).text)
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.requests_timeout, verify=self.verify_SSL).text)
         if 'error' in result:
             raise ValueError(result['error']['message'])
         if type(result['result']) is dict:

@@ -1,3 +1,2 @@
-retry==0.9.2
 requests==2.27.1
 neo_mamba==0.9

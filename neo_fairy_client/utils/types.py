@@ -117,23 +117,31 @@ class PublicKeyStr(HashStr):
 
 
 class WitnessScope(Enum):
-    NONE = 'None'
-    CalledByEntry = 'CalledByEntry'
-    CustomContracts = 'CustomContracts'
-    CustomGroups = 'CustomGroups'
-    Global = 'Global'
-    WitnessRules = 'WitnessRules'
+    NONE = 'None'  # no contract has your valid signature
+    CalledByEntry = 'CalledByEntry'  # only the called contract has your valid signature
+    Global = 'Global'  # all contracts have your valid signature
+    CustomContracts = 'CustomContracts'  # only contracts of designated addresses have your valid signature
+    CustomGroups = 'CustomGroups'  # only designated public keys have your valid signature
+    WitnessRules = 'WitnessRules'  # complex rules to determine which contracts have your valid signature
+    # https://docs.neo.org/docs/en-us/basic/concept/transaction.html#witnessrule
 
 
 class Signer:
     def __init__(self, account: Union[Hash160Str, str], scopes: WitnessScope = WitnessScope.CalledByEntry,
-                 allowedcontracts: List[Hash160Str] = None, allowedgroups: List[PublicKeyStr] = None,
-                 rules: List = None):
+                 allowedcontracts: Union[List[Hash160Str], Hash160Str] = None,
+                 allowedgroups: Union[List[PublicKeyStr], PublicKeyStr] = None,
+                 rules: Union[List[dict], dict] = None):
         self.account: Hash160Str = account if type(account) is Hash160Str else Hash160Str.from_address(account)
         self.scopes: WitnessScope = scopes
-        self.allowedcontracts = to_list(allowedcontracts) or []
-        self.allowedgroups = to_list(allowedgroups) or []
-        self.rules = to_list(rules) or []
+        if self.scopes == WitnessScope.CustomContracts and not allowedcontracts:
+            print('WARNING! You did not allow any contract to use your signature.')
+        if self.scopes == WitnessScope.CustomGroups and not allowedgroups:
+            print('WARNING! You did not allow any public key account to use your signature.')
+        if self.scopes == WitnessScope.WitnessRules and not rules:
+            raise ValueError('WARNING! No rules written for WitnessRules')
+        self.allowedcontracts = to_list(allowedcontracts)
+        self.allowedgroups = to_list(allowedgroups)
+        self.rules = to_list(rules)
     
     def to_dict(self):
         return {
