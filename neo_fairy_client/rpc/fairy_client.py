@@ -62,11 +62,11 @@ class FairyClient:
                  wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
                  contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
                  fairy_session: str = None, function_default_relay=True, script_default_relay=False,
-                 reset_fairy_session=True,
+                 auto_reset_fairy_session=True,
                  with_print=True, verbose_return=False, verify_SSL: bool = True,
                  requests_session: requests.Session = default_requests_session,
                  requests_timeout: Union[int, None] = default_request_timeout,
-                 set_neo_balance=100_0000_0000, set_gas_balance=100_0000_0000):
+                 auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
@@ -121,17 +121,17 @@ class FairyClient:
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        if fairy_session and reset_fairy_session:
+        if fairy_session and auto_reset_fairy_session:
             self.delete_snapshots(fairy_session)
             self.new_snapshots_from_current_system(fairy_session)
         try:
             self.open_fairy_wallet()
         except:
             print(f"WARNING: Failed to open fairy wallet at {target_url} at path `{wallet_path}`!")
-        if set_neo_balance and self.wallet_scripthash:
-            self.set_neo_balance(set_neo_balance)
-        if set_gas_balance and self.wallet_scripthash:
-            self.set_gas_balance(set_gas_balance)
+        if auto_set_neo_balance and self.wallet_scripthash:
+            self.set_neo_balance(auto_set_neo_balance)
+        if auto_set_gas_balance and self.wallet_scripthash:
+            self.set_gas_balance(auto_set_gas_balance)
 
     def assign_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
