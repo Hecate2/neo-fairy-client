@@ -4,7 +4,8 @@ import os
 from functools import partial
 from typing import List, Union, Tuple, Any, Callable
 
-from neo_fairy_client.utils.types import Hash160Str, Hash256Str, EngineResultInterpreter
+from neo_fairy_client.utils.types import Hash160Str, Hash256Str
+from neo_fairy_client.utils import Interpreter
 
 from neo3 import vm, contracts, blockchain
 from neo3.contracts import ApplicationEngine, interop
@@ -76,7 +77,7 @@ class FairyEngine:
         Only the contract specified in __init__ can be tested. You can deploy more contracts to be called by the tested
         contract.
         """
-        self.Prefix_Account_bytes = EngineResultInterpreter.int_to_bytes(self.Prefix_Account)
+        self.Prefix_Account_bytes = Interpreter.int_to_bytes(self.Prefix_Account)
         self.raw_nef, self.raw_manifest = self.read_raw_nef_and_raw_manifest(nef_path, manifest_path)
         self.nef, self.manifest = self.build_nef_and_manifest_from_raw(self.raw_nef, self.raw_manifest)
         self.previous_engine: ApplicationEngine = self.new_engine()
@@ -277,7 +278,7 @@ class FairyEngine:
             bytes_needed = 9
         contracts.interop.storage_put(engine, StorageContext(token_contract.id, False),
                                       self.Prefix_Account_bytes + account,
-                                      self.Number_Prefix + EngineResultInterpreter.int_to_bytes(amount, bytes_needed=bytes_needed))
+                                      self.Number_Prefix + Interpreter.int_to_bytes(amount, bytes_needed=bytes_needed))
         engine.snapshot.commit()
         self.previous_engine = engine
         
