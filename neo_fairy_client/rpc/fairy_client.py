@@ -1,6 +1,7 @@
 from typing import List, Union, Dict, Any
 import base64
 import json
+import os
 import requests
 
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
@@ -61,9 +62,11 @@ class FairyClient:
                  wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
                  contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
                  fairy_session: str = None, function_default_relay=True, script_default_relay=False,
+                 reset_fairy_session=True,
                  with_print=True, verbose_return=False, verify_SSL: bool = True,
                  requests_session: requests.Session = default_requests_session,
-                 requests_timeout: Union[int, None] = default_request_timeout):
+                 requests_timeout: Union[int, None] = default_request_timeout,
+                 set_neo_balance=100_0000_0000, set_gas_balance=100_0000_0000):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
@@ -117,12 +120,19 @@ class FairyClient:
             print('WARNING: Will ignore SSL certificate errors!')
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
+
+        if fairy_session and reset_fairy_session:
+            self.delete_snapshots(fairy_session)
+            self.new_snapshots_from_current_system(fairy_session)
         try:
             self.open_fairy_wallet()
         except:
             print(f"WARNING: Failed to open fairy wallet at {target_url} at path `{wallet_path}`!")
-    
+        if set_neo_balance and self.wallet_scripthash:
+            self.set_neo_balance(set_neo_balance)
+        if set_gas_balance and self.wallet_scripthash:
+            self.set_gas_balance(set_gas_balance)
+
     def assign_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
@@ -389,11 +399,11 @@ class FairyClient:
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
-                                       with_print=True, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
+                                       with_print=True, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
-            if rpc_server_session:
-                print(f'{rpc_server_session}::invokefunction {operation}')
+            if fairy_session:
+                print(f'{fairy_session}::invokefunction {operation}')
             else:
                 print(f'invokefunction {operation}')
         
@@ -405,9 +415,9 @@ class FairyClient:
             list(map(lambda param: self.parse_params(param), params)),
             list(map(lambda signer: signer.to_dict(), signers)),
         ]
-        if rpc_server_session:
+        if fairy_session:
             result = self.meta_rpc_method(
-                'invokefunctionwithsession', [rpc_server_session, relay or (relay is None and self.function_default_relay)] + parameters, relay=False,
+                'invokefunctionwithsession', [fairy_session, relay or (relay is None and self.function_default_relay)] + parameters, relay=False,
                 do_not_raise_on_result=do_not_raise_on_result)
         else:
             result = self.meta_rpc_method('invokefunction', parameters, relay=relay,
@@ -416,13 +426,13 @@ class FairyClient:
     
     def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160]] = None,
                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
-                       rpc_server_session: str = None) -> Any:
+                       fairy_session: str = None) -> Any:
         if self.contract_scripthash is None or self.contract_scripthash == Hash160Str.zero():
             raise ValueError(f'Please set client.contract_scripthash before invoking function. Got {self.contract_scripthash}')
         return self.invokefunction_of_any_contract(self.contract_scripthash, operation, params,
                                                    signers=signers, relay=relay or (relay is None and self.function_default_relay),
                                                    do_not_raise_on_result=do_not_raise_on_result,
-                                                   with_print=with_print, rpc_server_session=rpc_server_session)
+                                                   with_print=with_print, fairy_session=fairy_session)
     
     def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay: bool = None,
                      fairy_session: str = None) -> Any:
@@ -519,18 +529,16 @@ class FairyClient:
             raise ValueError(f'Failed to close wallet.')
         return close_wallet_result
 
-    def new_snapshots_from_current_system(self, rpc_server_sessions: Union[List[str], str] = None):
-        rpc_server_sessions = rpc_server_sessions or self.fairy_session
-        if rpc_server_sessions is None:
+    def new_snapshots_from_current_system(self, fairy_sessions: Union[List[str], str] = None):
+        fairy_sessions = fairy_sessions or self.fairy_session
+        if fairy_sessions is None:
             raise ValueError('No RpcServer session specified')
-        if type(rpc_server_sessions) is str:
-            return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [rpc_server_sessions])
-        return self.meta_rpc_method("newsnapshotsfromcurrentsystem", rpc_server_sessions)
+        if type(fairy_sessions) is str:
+            return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [fairy_sessions])
+        return self.meta_rpc_method("newsnapshotsfromcurrentsystem", fairy_sessions)
     
-    def delete_snapshots(self, rpc_server_sessions: Union[List[str], str]):
-        if type(rpc_server_sessions) is str:
-            return self.meta_rpc_method("deletesnapshots", [rpc_server_sessions])
-        return self.meta_rpc_method("deletesnapshots", rpc_server_sessions)
+    def delete_snapshots(self, fairy_sessions: Union[List[str], str]):
+        return self.meta_rpc_method("deletesnapshots", to_list(fairy_sessions))
     
     def list_snapshots(self):
         return self.meta_rpc_method("listsnapshots", [])
@@ -541,41 +549,79 @@ class FairyClient:
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
-    def set_snapshot_timestamp(self, timestamp_ms: Union[int, None], rpc_server_session: str = None) -> Dict[str, int]:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        return self.meta_rpc_method("setsnapshottimestamp", [rpc_server_session, timestamp_ms])
+    def set_snapshot_timestamp(self, timestamp_ms: Union[int, None], fairy_session: str = None) -> Dict[str, int]:
+        fairy_session = fairy_session or self.fairy_session
+        return self.meta_rpc_method("setsnapshottimestamp", [fairy_session, timestamp_ms])
     
-    def get_snapshot_timestamp(self, rpc_server_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
-        rpc_server_sessions = rpc_server_sessions or self.fairy_session
-        if rpc_server_sessions is None:
+    def get_snapshot_timestamp(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
+        fairy_sessions = fairy_sessions or self.fairy_session
+        if fairy_sessions is None:
             raise ValueError('No RpcServer session specified')
-        if type(rpc_server_sessions) is str:
-            return self.meta_rpc_method("getsnapshottimestamp", [rpc_server_sessions])
-        return self.meta_rpc_method("getsnapshottimestamp", rpc_server_sessions)
+        if type(fairy_sessions) is str:
+            return self.meta_rpc_method("getsnapshottimestamp", [fairy_sessions])
+        return self.meta_rpc_method("getsnapshottimestamp", fairy_sessions)
 
-    def set_snapshot_random(self, designated_random: Union[int, None], rpc_server_session: str = None) -> Dict[str, Union[int, None]]:
+    def set_snapshot_random(self, designated_random: Union[int, None], fairy_session: str = None) -> Dict[str, Union[int, None]]:
         """
         @param designated_random: use None to delete the designated random and let Fairy choose any random number
         """
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method("setsnapshotrandom", [rpc_server_session, designated_random])
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method("setsnapshotrandom", [fairy_session, designated_random])
         for k in result:
             result[k] = None if result[k] is None else int(result[k])
         return result
 
-    def get_snapshot_random(self, rpc_server_sessions: Union[List[str], str] = None) -> Dict[str, int]:
-        rpc_server_sessions = rpc_server_sessions or self.fairy_session
-        if type(rpc_server_sessions) is str:
-            result = self.meta_rpc_method("getsnapshotrandom", [rpc_server_sessions])
+    def get_snapshot_random(self, fairy_sessions: Union[List[str], str] = None) -> Dict[str, int]:
+        fairy_sessions = fairy_sessions or self.fairy_session
+        if type(fairy_sessions) is str:
+            result = self.meta_rpc_method("getsnapshotrandom", [fairy_sessions])
         else:
-            result = self.meta_rpc_method("getsnapshotrandom", rpc_server_sessions)
+            result = self.meta_rpc_method("getsnapshotrandom", fairy_sessions)
         for k, v in result.items():
             result[k] = None if not v else int(v)
         return result
 
-    def virtual_deploy(self, nef: bytes, manifest: str, rpc_server_session: str = None) -> Hash160Str:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        return Hash160Str(self.meta_rpc_method("virtualdeploy", [rpc_server_session, base64.b64encode(nef).decode(), manifest])[rpc_server_session])
+    def virtual_deploy(self, nef: bytes, manifest: str, fairy_session: str = None) -> Hash160Str:
+        fairy_session = fairy_session or self.fairy_session
+        return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest])[fairy_session])
+
+    def virutal_deploy_from_path(self, nef_path_and_filename: str, fairy_session: str = None,
+                                 auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True) -> Hash160Str:
+        """
+        auto virtual deploy which also executes dumpnef (on your machine) and SetDebugInfo (with RPC)
+        :param nef_path_and_filename: `../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef`
+        """
+        fairy_session = fairy_session or self.fairy_session
+        path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
+        assert nef_filename.endswith('.nef')
+        with open(nef_path_and_filename, 'rb') as f:
+            nef = f.read()
+        contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
+        with open(contract_path_and_filename+".manifest.json", 'r') as f:
+            manifest = f.read()
+        contract_hash = self.virtual_deploy(nef, manifest, fairy_session)
+        nefdbgnfo_path_and_filename = contract_path_and_filename + '.nefdbgnfo'
+        dumpnef_path_and_filename = contract_path_and_filename + '.nef.txt'
+        if os.path.exists(nefdbgnfo_path_and_filename):
+            if auto_dumpnef:
+                if dumpnef_backup and os.path.exists(dumpnef_path_and_filename) and not os.path.exists(contract_path_and_filename + '.bk.txt'):
+                    # only backup the .nef.txt file when no backup exists
+                    os.rename(dumpnef_path_and_filename, contract_path_and_filename + '.bk.txt')
+                print(f'dumpnef {nef_filename}', os.popen(f'dumpnef {nef_path_and_filename} > {nef_path_and_filename}.txt').read())
+            if auto_set_debug_info and os.path.exists(dumpnef_path_and_filename) \
+                    and os.path.getmtime(dumpnef_path_and_filename) >= os.path.getmtime(nef_path_and_filename) \
+                    and fairy_session:
+                with open(nefdbgnfo_path_and_filename, 'rb') as f:
+                    nefdbgnfo = f.read()
+                with open(dumpnef_path_and_filename, 'r') as f:
+                    dumpnef = f.read()
+                self.set_debug_info(nefdbgnfo, dumpnef, contract_hash)
+        else:
+            print('WARNING! No .nefdbgnfo found.'
+                  'It is highly recommended to generate .nefdbgnfo for debugging.'
+                  'If you are writing contracts in C#,'
+                  'consider building your project with command `nccs your.csproj --debug`.')
+        return contract_hash
 
     @staticmethod
     def all_to_base64(key: Union[str, bytes, int]) -> str:
@@ -589,42 +635,42 @@ class FairyClient:
             raise ValueError(f'Unexpected input type {type(key)} {key}')
         return key
 
-    def get_storage_with_session(self, key: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
-        rpc_server_session = rpc_server_session or self.fairy_session
+    def get_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+        fairy_session = fairy_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
-        return self.meta_rpc_method("getstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
+        return self.meta_rpc_method("getstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key)])
 
-    def find_storage_with_session(self, key: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
-        rpc_server_session = rpc_server_session or self.fairy_session
+    def find_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+        fairy_session = fairy_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
-        return self.meta_rpc_method("findstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key)])
+        return self.meta_rpc_method("findstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key)])
 
-    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], rpc_server_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
         """
         :param value==0 deletes the key-value pair
         """
-        rpc_server_session = rpc_server_session or self.fairy_session
+        fairy_session = fairy_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
-        return self.meta_rpc_method("putstoragewithsession", [rpc_server_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
+        return self.meta_rpc_method("putstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
 
-    def set_neo_balance(self, balance: Union[int, float], rpc_server_session: str = None, account: Hash160Str = None):
+    def set_neo_balance(self, balance: Union[int, float], fairy_session: str = None, account: Hash160Str = None):
         balance = int(balance)
-        rpc_server_session = rpc_server_session or self.fairy_session
+        fairy_session = fairy_session or self.fairy_session
         account = account or self.wallet_scripthash
-        return self.meta_rpc_method("setneobalance", [rpc_server_session, account, balance])
+        return self.meta_rpc_method("setneobalance", [fairy_session, account, balance])
 
-    def set_gas_balance(self, balance: Union[int, float], rpc_server_session: str = None, account: Hash160Str = None):
+    def set_gas_balance(self, balance: Union[int, float], fairy_session: str = None, account: Hash160Str = None):
         balance = int(balance)
-        rpc_server_session = rpc_server_session or self.fairy_session
+        fairy_session = fairy_session or self.fairy_session
         account = account or self.wallet_scripthash
-        return self.meta_rpc_method("setgasbalance", [rpc_server_session, account, balance])
+        return self.meta_rpc_method("setgasbalance", [fairy_session, account, balance])
 
-    def set_nep17_balance(self, contract: Hash160Str, balance: int, rpc_server_session: str = None, account: Hash160Str = None, byte_prefix: int = 1):
+    def set_nep17_balance(self, contract: Hash160Str, balance: int, fairy_session: str = None, account: Hash160Str = None, byte_prefix: int = 1):
         if byte_prefix >= 256 or byte_prefix < 0:
             raise ValueError(f'Only 0<=byte_prefix<=255 accepted. Got {byte_prefix}')
-        rpc_server_session = rpc_server_session or self.fairy_session
+        fairy_session = fairy_session or self.fairy_session
         account = account or self.wallet_scripthash
-        return self.meta_rpc_method("setnep17balance", [rpc_server_session, contract, account, balance, byte_prefix])
+        return self.meta_rpc_method("setnep17balance", [fairy_session, contract, account, balance, byte_prefix])
 
     b"""
     Fairy debugger features!
@@ -689,10 +735,10 @@ class FairyClient:
         filename_and_line_num = filename_and_line_num or []
         return self.meta_rpc_method("deletesourcecodebreakpoints", [contract_scripthash] + filename_and_line_num)
 
-    def delete_debug_snapshots(self, rpc_server_sessions: Union[List[str], str]):
-        if type(rpc_server_sessions) is str:
-            return self.meta_rpc_method("deletedebugsnapshots", [rpc_server_sessions])
-        return self.meta_rpc_method("deletedebugsnapshots", rpc_server_sessions)
+    def delete_debug_snapshots(self, fairy_sessions: Union[List[str], str]):
+        if type(fairy_sessions) is str:
+            return self.meta_rpc_method("deletedebugsnapshots", [fairy_sessions])
+        return self.meta_rpc_method("deletedebugsnapshots", fairy_sessions)
 
     def list_debug_snapshots(self):
         return self.meta_rpc_method("listdebugsnapshots", [])
@@ -704,12 +750,12 @@ class FairyClient:
     def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
-                                       with_print=True, rpc_server_session: str = None) -> Any:
+                                       with_print=True, fairy_session: str = None) -> Any:
         scripthash = scripthash or self.contract_scripthash
-        rpc_server_session = rpc_server_session or self.fairy_session
+        fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
-            if rpc_server_session:
-                print(f'{rpc_server_session}::debugfunction {operation}')
+            if fairy_session:
+                print(f'{fairy_session}::debugfunction {operation}')
             else:
                 print(f'debugfunction {operation}')
     
@@ -723,7 +769,7 @@ class FairyClient:
         ]
         raw_result = self.meta_rpc_method_with_raw_result(
             'debugfunctionwithsession',
-            [rpc_server_session, relay or (relay is None and self.function_default_relay)] + parameters)
+            [fairy_session, relay or (relay is None and self.function_default_relay)] + parameters)
         result = raw_result['result']
         return RpcBreakpoint(result['state'], result['breakreason'],
                              result['scripthash'], result['contractname'], result['instructionpointer'],
@@ -733,75 +779,75 @@ class FairyClient:
     def debug_function_with_session(self, operation: str,
                                         params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                         signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
-                                        with_print=True, rpc_server_session: str = None) -> Any:
+                                        with_print=True, fairy_session: str = None) -> Any:
         return self.debug_any_function_with_session(
             self.contract_scripthash, operation,
             params=params, signers=signers, relay=relay, do_not_raise_on_result=do_not_raise_on_result,
-            with_print=with_print, rpc_server_session=rpc_server_session)
+            with_print=with_print, fairy_session=fairy_session)
 
-    def debug_continue(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("debugcontinue", [rpc_server_session])
+    def debug_continue(self, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("debugcontinue", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_into(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("debugstepinto", [rpc_server_session])
+    def debug_step_into(self, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("debugstepinto", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_out(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("debugstepout", [rpc_server_session])
+    def debug_step_out(self, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("debugstepout", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_over(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("debugstepover", [rpc_server_session])
+    def debug_step_over(self, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("debugstepover", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_over_source_code(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("debugstepoversourcecode", [rpc_server_session])
+    def debug_step_over_source_code(self, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("debugstepoversourcecode", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def debug_step_over_assembly(self, rpc_server_session: str = None) -> RpcBreakpoint:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("debugstepoverassembly", [rpc_server_session])
+    def debug_step_over_assembly(self, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("debugstepoverassembly", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
-    def get_local_variables(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getlocalvariables", [rpc_server_session, invocation_stack_index])
+    def get_local_variables(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getlocalvariables", [fairy_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
-    def get_arguments(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getarguments", [rpc_server_session, invocation_stack_index])
+    def get_arguments(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getarguments", [fairy_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
-    def get_static_fields(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getstaticfields", [rpc_server_session, invocation_stack_index])
+    def get_static_fields(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getstaticfields", [fairy_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
-    def get_evaluation_stack(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getevaluationstack", [rpc_server_session, invocation_stack_index])
+    def get_evaluation_stack(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getevaluationstack", [fairy_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
-    def get_instruction_pointer(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getinstructionpointer", [rpc_server_session, invocation_stack_index])
+    def get_instruction_pointer(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getinstructionpointer", [fairy_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)[0]
 
-    def get_variable_value_by_name(self, variable_name: str, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getvariablevaluebyname", [rpc_server_session, variable_name, invocation_stack_index])
+    def get_variable_value_by_name(self, variable_name: str, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getvariablevaluebyname", [fairy_session, variable_name, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
 
-    def get_variable_names_and_values(self, invocation_stack_index: int = 0, rpc_server_session: str = None) -> Any:
-        rpc_server_session = rpc_server_session or self.fairy_session
-        result = self.meta_rpc_method_with_raw_result("getvariablenamesandvalues", [rpc_server_session, invocation_stack_index])
+    def get_variable_names_and_values(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method_with_raw_result("getvariablenamesandvalues", [fairy_session, invocation_stack_index])
         return self.parse_stack_from_raw_result(result)
     
     def get_contract_opcode_coverage(self, scripthash: UInt160 = None) -> Dict[int, bool]:
