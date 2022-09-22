@@ -55,8 +55,8 @@ class RpcBreakpoint:
 
 
 class FairyClient:
-    def __init__(self, target_url: str, wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
-                 contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer]] = [],
+    def __init__(self, target_url: str = 'http://localhost:16868', wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
+                 contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
                  with_print=True, requests_session=requests.Session(), verbose_return=False,
                  function_default_relay=True, script_default_relay=False,
                  fairy_session: str = None, verify_SSL: bool = True):

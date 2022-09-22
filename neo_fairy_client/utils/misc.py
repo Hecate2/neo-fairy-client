@@ -6,4 +6,4 @@ def to_list(element: Any):
         return element
     if element is not None:
         return [element]
-    return element
+    return None
