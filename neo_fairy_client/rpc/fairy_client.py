@@ -2,7 +2,9 @@ from typing import List, Union, Dict, Any
 import base64
 import json
 import os
+import traceback
 import requests
+import urllib3
 
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
 from neo_fairy_client.utils import Interpreter, to_list
@@ -118,20 +120,20 @@ class FairyClient:
         self.requests_timeout: Union[int, None] = requests_timeout
         if verify_SSL is False:
             print('WARNING: Will ignore SSL certificate errors!')
-            import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        if fairy_session and auto_reset_fairy_session:
-            self.delete_snapshots(fairy_session)
-            self.new_snapshots_from_current_system(fairy_session)
         try:
+            if fairy_session and auto_reset_fairy_session:
+                self.delete_snapshots(fairy_session)
+                self.new_snapshots_from_current_system(fairy_session)
             self.open_fairy_wallet()
+            if auto_set_neo_balance and self.wallet_scripthash:
+                self.set_neo_balance(auto_set_neo_balance)
+            if auto_set_gas_balance and self.wallet_scripthash:
+                self.set_gas_balance(auto_set_gas_balance)
         except:
-            print(f"WARNING: Failed to open fairy wallet at {target_url} at path `{wallet_path}`!")
-        if auto_set_neo_balance and self.wallet_scripthash:
-            self.set_neo_balance(auto_set_neo_balance)
-        if auto_set_gas_balance and self.wallet_scripthash:
-            self.set_gas_balance(auto_set_gas_balance)
+            traceback.print_exc()
+            print(f"WARNING: Failed at some fairy operations at {target_url} with wallet `{wallet_path}`!")
 
     def assign_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
