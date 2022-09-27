@@ -124,7 +124,6 @@ class FairyClient:
 
         try:
             if fairy_session and auto_reset_fairy_session:
-                self.delete_snapshots(fairy_session)
                 self.new_snapshots_from_current_system(fairy_session)
             self.open_fairy_wallet()
             if auto_set_neo_balance and self.wallet_scripthash:
