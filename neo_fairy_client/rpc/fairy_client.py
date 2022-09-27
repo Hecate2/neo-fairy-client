@@ -585,7 +585,14 @@ class FairyClient:
 
     def virtual_deploy(self, nef: bytes, manifest: str, fairy_session: str = None) -> Hash160Str:
         fairy_session = fairy_session or self.fairy_session
-        return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest])[fairy_session])
+        try:
+            return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest])[fairy_session])
+        except Exception as e:
+            print(f'If you have weird exceptions from this method, '
+                  f'check if you have written any `null` to contract storage in `_deploy` method. '
+                  f'Especially, consider marking your UInt160 properties of class '
+                  f'as `static readonly UInt160` in your contract')
+            raise e
 
     def virutal_deploy_from_path(self, nef_path_and_filename: str, fairy_session: str = None,
                                  auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True) -> Hash160Str:
