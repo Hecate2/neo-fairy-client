@@ -594,7 +594,8 @@ class FairyClient:
             raise e
 
     def virutal_deploy_from_path(self, nef_path_and_filename: str, fairy_session: str = None,
-                                 auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True) -> Hash160Str:
+                                 auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True,
+                                 auto_set_client_contract_scripthash=True) -> Hash160Str:
         """
         auto virtual deploy which also executes dumpnef (on your machine) and SetDebugInfo (with RPC)
         :param nef_path_and_filename: '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef'
@@ -629,6 +630,8 @@ class FairyClient:
                   'It is highly recommended to generate .nefdbgnfo for debugging.'
                   'If you are writing contracts in C#,'
                   'consider building your project with command `nccs your.csproj --debug`.')
+        if auto_set_client_contract_scripthash:
+            self.contract_scripthash = contract_hash
         return contract_hash
 
     @staticmethod
