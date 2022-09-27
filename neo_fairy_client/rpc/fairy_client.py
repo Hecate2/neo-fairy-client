@@ -591,7 +591,7 @@ class FairyClient:
                                  auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True) -> Hash160Str:
         """
         auto virtual deploy which also executes dumpnef (on your machine) and SetDebugInfo (with RPC)
-        :param nef_path_and_filename: `../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef`
+        :param nef_path_and_filename: '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef'
         """
         fairy_session = fairy_session or self.fairy_session
         path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
@@ -605,7 +605,7 @@ class FairyClient:
         nefdbgnfo_path_and_filename = contract_path_and_filename + '.nefdbgnfo'
         dumpnef_path_and_filename = contract_path_and_filename + '.nef.txt'
         if os.path.exists(nefdbgnfo_path_and_filename):
-            if auto_dumpnef:
+            if auto_dumpnef and (not os.path.exists(dumpnef_path_and_filename) or os.path.getmtime(dumpnef_path_and_filename) < os.path.getmtime(nef_path_and_filename)):
                 if dumpnef_backup and os.path.exists(dumpnef_path_and_filename) and not os.path.exists(contract_path_and_filename + '.bk.txt'):
                     # only backup the .nef.txt file when no backup exists
                     os.rename(dumpnef_path_and_filename, contract_path_and_filename + '.bk.txt')
