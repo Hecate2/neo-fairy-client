@@ -108,7 +108,7 @@ print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'reg
 print(lender_client.totalfee, lender_client.previous_system_fee, lender_client.previous_network_fee)
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, test_nopht_d_hash, 1, 10]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'setRentalPrice', [wallet_scripthash, anyupdate_short_safe_hash, 1, 3]]))
-assert lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True]], do_not_raise_on_result=True) == FAULT_MESSAGE
+assert FAULT_MESSAGE in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'registerRental', [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True]], do_not_raise_on_result=True)
 query_all_rental()
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listExternalTokenInfo', [0]]))
 print(lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'listExternalTokenInfo', [1]]))
@@ -129,7 +129,7 @@ rental_period = 16000
 print(execution_timestamp := borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 15, 1, rental_period]]))
 assert execution_timestamp == borrow_timestamp
 # cannot borrow the same token from the same owner twice in a single block
-assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, test_nopht_d_hash, 1, rental_period]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, test_nopht_d_hash, 1, rental_period]], do_not_raise_on_result=True)
 assert 15 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'balanceOf', [borrower_scripthash, 1]], relay=False)
 print('GAS consumption:', initial_borrower_gas - borrower_client.get_gas_balance())
 query_all_rental(client=borrower_client, timestamp=borrow_timestamp)
@@ -138,10 +138,10 @@ borrow_timestamp2 = borrow_timestamp + 100
 borrower_client.set_snapshot_timestamp(borrow_timestamp2, fairy_session_correct_payback)
 assert borrow_timestamp2 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 30, test_nopht_d_hash, 1, rental_period - 100]])
 # cannot borrow an amount <= 0
-assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 0, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
-assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, -1, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 0, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, -1, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
 # cannot borrow more than total supply
-assert FAULT_MESSAGE == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 56, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 56, test_nopht_d_hash, 1, rental_period - 100]], do_not_raise_on_result=True)
 # we borrowed 15 tokens at borrow_timestamp and 30 tokens at borrow_timestamp2
 # both will expire at borrow_timestamp + rental_period
 assert 45 == borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'balanceOf', [borrower_scripthash, 1]], relay=False)
@@ -154,7 +154,7 @@ assert borrower_client.get_gas_balance() - initial_borrower_gas == -300  # 100*2
 assert borrower_client.get_gas_balance(owner=anyupdate_short_safe_hash) == 100
 print(borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp, borrower_scripthash, False]]))
 assert borrower_client.get_nep11token_balance(test_nopht_d_hash, 1, owner=anyupdate_short_safe_hash) == 100
-assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'payback', [wallet_scripthash, borrower_scripthash, test_nopht_d_hash, 1, borrow_timestamp2, wallet_scripthash, True]], do_not_raise_on_result=True)
 assert borrower_client.get_gas_balance() - initial_borrower_gas == -250  # +50 collateral
 query_all_rental()
 
@@ -182,6 +182,6 @@ assert lender_client.get_gas_balance() - initial_lender_gas == 250  # 2*100 rent
 assert '''Method "transfer" with 3 parameter(s) doesn't exist in the contract''' in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, False]], do_not_raise_on_result=True)
 assert [] == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, Hash160Str.zero(), 70, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]])
 assert [] == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, wallet_scripthash, 70, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]])
-assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, wallet_scripthash, 71, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]], do_not_raise_on_result=True)
-assert FAULT_MESSAGE == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, Hash160Str.zero(), 71, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, wallet_scripthash, 71, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]], do_not_raise_on_result=True)
+assert FAULT_MESSAGE in lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'flashBorrowDivisible', [wallet_scripthash, test_nopht_d_hash, 1, Hash160Str.zero(), 71, anyupdate_short_safe_hash, 'listRentalDeadlineByTenant', []]], do_not_raise_on_result=True)
 assert 0 == lender_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'unregisterRental', [wallet_scripthash, test_nopht_d_hash, 70, 1, True]])
