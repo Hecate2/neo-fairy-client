@@ -134,7 +134,7 @@ class FairyClient:
             traceback.print_exc()
             print(f"WARNING: Failed at some fairy operations at {target_url} with wallet `{wallet_path}`!")
 
-    def assign_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
+    def set_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
         :param signers: Signer(wallet_scripthash or wallet_address). By Signer you can assign WitnessScope
@@ -399,7 +399,7 @@ class FairyClient:
     
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
-                                       signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
+                                       signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> Any:
         fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
@@ -409,7 +409,7 @@ class FairyClient:
                 print(f'invokefunction {operation}')
         
         params = params or []
-        signers = signers or self.signers
+        signers = to_list(signers or self.signers)
         parameters = [
             str(scripthash),
             operation,
@@ -426,7 +426,7 @@ class FairyClient:
         return result
     
     def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160]] = None,
-                       signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
+                       signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
                        fairy_session: str = None) -> Any:
         if self.contract_scripthash is None or self.contract_scripthash == Hash160Str.zero():
             raise ValueError(f'Please set client.contract_scripthash before invoking function. Got {self.contract_scripthash}')
@@ -435,11 +435,11 @@ class FairyClient:
                                                    do_not_raise_on_result=do_not_raise_on_result,
                                                    with_print=with_print, fairy_session=fairy_session)
     
-    def invokescript(self, script: Union[str, bytes], signers: List[Signer] = None, relay: bool = None,
+    def invokescript(self, script: Union[str, bytes], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                      fairy_session: str = None) -> Any:
         if type(script) is bytes:
             script: str = script.decode()
-        signers = signers or self.signers
+        signers = to_list(signers or self.signers)
         fairy_session = fairy_session or self.fairy_session
         if fairy_session:
             relay = relay or (relay is None and self.script_default_relay)
@@ -466,8 +466,7 @@ class FairyClient:
         :param signers:
         :return:
         """
-        if not signers:
-            signers = [self.signers]
+        signers = to_list(signers or self.signers)
         return self.meta_rpc_method('sendfrom', [
             asset_id.to_str(),
             from_address, to_address, value,
@@ -760,7 +759,7 @@ class FairyClient:
 
     def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
-                                       signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
+                                       signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> Any:
         scripthash = scripthash or self.contract_scripthash
         fairy_session = fairy_session or self.fairy_session
@@ -771,7 +770,7 @@ class FairyClient:
                 print(f'debugfunction {operation}')
     
         params = params or []
-        signers = signers or self.signers
+        signers = to_list(signers or self.signers)
         parameters = [
             str(scripthash),
             operation,
