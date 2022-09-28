@@ -587,6 +587,10 @@ class FairyClient:
 
     def virtual_deploy(self, nef: bytes, manifest: str, fairy_session: str = None) -> Hash160Str:
         fairy_session = fairy_session or self.fairy_session
+        # check manifest
+        manifest_dict = json.loads(manifest)
+        if manifest_dict["permissions"] == [{'contract': '0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0', 'methods': ['deserialize', 'serialize']}, {'contract': '0xfffdc93764dbaddd97c48f252a53ea4643faa3fd', 'methods': ['destroy', 'getContract', 'update']}]:
+            print('!!!SERIOUS WARNING: Did you write [ContractPermission("*", "*")] in your contract?!!!')
         try:
             return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest])[fairy_session])
         except Exception as e:
