@@ -676,6 +676,12 @@ class FairyClient:
         return self.meta_rpc_method("setgasbalance", [fairy_session, account, balance])
 
     def set_nep17_balance(self, contract: Hash160Str, balance: int, fairy_session: str = None, account: Hash160Str = None, byte_prefix: int = 1):
+        """
+        We do not guarantee the success of this method.
+        If the token contract is written with an unusual storage pattern,
+        (e.g. fUSDT at 0xcd48b160c1bbc9d74997b803b9a7ad50a4bef020)
+        you will need to modify the Fairy server to set the balance
+        """
         if byte_prefix >= 256 or byte_prefix < 0:
             raise ValueError(f'Only 0<=byte_prefix<=255 accepted. Got {byte_prefix}')
         fairy_session = fairy_session or self.fairy_session
