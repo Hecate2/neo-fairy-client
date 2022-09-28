@@ -529,6 +529,12 @@ class FairyClient:
             raise ValueError(f'Failed to close wallet.')
         return close_wallet_result
 
+    def get_time_milliseconds(self) -> int:
+        """
+        :return: blockchain timestamp in milliseconds
+        """
+        return self.meta_rpc_method('gettime', [])['time']
+
     def new_snapshots_from_current_system(self, fairy_sessions: Union[List[str], str] = None):
         fairy_sessions = fairy_sessions or self.fairy_session
         if fairy_sessions is None:
@@ -557,9 +563,7 @@ class FairyClient:
         fairy_sessions = fairy_sessions or self.fairy_session
         if fairy_sessions is None:
             raise ValueError('No RpcServer session specified')
-        if type(fairy_sessions) is str:
-            return self.meta_rpc_method("getsnapshottimestamp", [fairy_sessions])
-        return self.meta_rpc_method("getsnapshottimestamp", fairy_sessions)
+        return self.meta_rpc_method("getsnapshottimestamp", to_list(fairy_sessions))
 
     def set_snapshot_random(self, designated_random: Union[int, None], fairy_session: str = None) -> Dict[str, Union[int, None]]:
         """
