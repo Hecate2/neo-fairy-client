@@ -1,4 +1,4 @@
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Callable
 import base64
 import json
 import os
@@ -68,7 +68,8 @@ class FairyClient:
                  with_print=True, verbose_return=False, verify_SSL: bool = True,
                  requests_session: requests.Session = default_requests_session,
                  requests_timeout: Union[int, None] = default_request_timeout,
-                 auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000):
+                 auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000,
+                 hook_function_after_rpc_call: Callable = None):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
@@ -118,6 +119,7 @@ class FairyClient:
         self.fairy_session: Union[str, None] = fairy_session
         self.verify_SSL: bool = verify_SSL
         self.requests_timeout: Union[int, None] = requests_timeout
+        self.hook_function_after_rpc_call = hook_function_after_rpc_call
         if verify_SSL is False:
             print('WARNING: Will ignore SSL certificate errors!')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -175,6 +177,8 @@ class FairyClient:
             raise ValueError(result['error'])
         self.previous_raw_result = result
         self.previous_result = None
+        if self.hook_function_after_rpc_call:
+            self.hook_function_after_rpc_call()
         return result
 
     def meta_rpc_method(self, method: str, parameters: List, relay: bool = None, do_not_raise_on_result=False) -> Any:
@@ -208,6 +212,8 @@ class FairyClient:
                 #     self.previous_txBase64Str = None
         self.previous_raw_result = result
         self.previous_result = self.parse_stack_from_raw_result(result)
+        if self.hook_function_after_rpc_call:
+            self.hook_function_after_rpc_call()
         if self.verbose_return:
             return self.previous_result, result, post_data
         return self.previous_result
