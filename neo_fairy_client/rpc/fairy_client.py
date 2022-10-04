@@ -69,6 +69,7 @@ class FairyClient:
                  requests_session: requests.Session = default_requests_session,
                  requests_timeout: Union[int, None] = default_request_timeout,
                  auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000,
+                 auto_preparation=True,
                  hook_function_after_rpc_call: Callable = None):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
@@ -90,6 +91,8 @@ class FairyClient:
             For concurrency, set verbose_return=True
         :param requests_session: requests.Session
         :param requests_timeout: raise Exceptions if request not completed in that many seconds. None for no limit
+        :param auto_preparation: prepares environments for common usage at a small cost of time
+        :param hook_function_after_rpc_call: a function with no input argument, executed after each successful RPC call
         """
         self.target_url: str = target_url
         self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
@@ -124,17 +127,18 @@ class FairyClient:
             print('WARNING: Will ignore SSL certificate errors!')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        try:
-            if fairy_session and auto_reset_fairy_session:
-                self.new_snapshots_from_current_system(fairy_session)
-            self.open_fairy_wallet()
-            if auto_set_neo_balance and self.wallet_scripthash:
-                self.set_neo_balance(auto_set_neo_balance)
-            if auto_set_gas_balance and self.wallet_scripthash:
-                self.set_gas_balance(auto_set_gas_balance)
-        except:
-            traceback.print_exc()
-            print(f"WARNING: Failed at some fairy operations at {target_url} with wallet `{wallet_path}`!")
+        if auto_preparation:
+            try:
+                if fairy_session and auto_reset_fairy_session:
+                    self.new_snapshots_from_current_system(fairy_session)
+                self.open_fairy_wallet()
+                if auto_set_neo_balance and self.wallet_scripthash:
+                    self.set_neo_balance(auto_set_neo_balance)
+                if auto_set_gas_balance and self.wallet_scripthash:
+                    self.set_gas_balance(auto_set_gas_balance)
+            except:
+                traceback.print_exc()
+                print(f"WARNING: Failed at some fairy operations at {target_url} with wallet `{wallet_path}`!")
 
     def set_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
         """
