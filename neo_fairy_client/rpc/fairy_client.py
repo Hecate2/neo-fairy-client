@@ -140,14 +140,19 @@ class FairyClient:
                 traceback.print_exc()
                 print(f"WARNING: Failed at some fairy operations at {target_url} with wallet `{wallet_path}`!")
 
-    def set_wallet_address(self, wallet_address: str, signers: Union[Signer, List[Signer]] = None):
+    def set_wallet_address_and_signers(self, wallet_address: Union[str, Hash160Str], signers: Union[Signer, List[Signer]] = None):
         """
-        :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
+        :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp", or scripthash
         :param signers: Signer(wallet_scripthash or wallet_address). By Signer you can assign WitnessScope
         """
-        self.wallet_address: str = wallet_address
-        wallet_scripthash = Hash160Str.from_address(wallet_address)
-        self.wallet_scripthash: Hash160Str = wallet_scripthash
+        if type(wallet_address) is Hash160Str:
+            wallet_scripthash = wallet_address
+            self.wallet_scripthash = wallet_address
+            self.wallet_address = Hash160Str.to_address(wallet_scripthash)
+        else:
+            self.wallet_address: str = wallet_address
+            wallet_scripthash = Hash160Str.from_address(wallet_address)
+            self.wallet_scripthash: Hash160Str = wallet_scripthash
         self.signers: List[Signer] = to_list(signers) or [Signer(wallet_scripthash)]
 
     @staticmethod

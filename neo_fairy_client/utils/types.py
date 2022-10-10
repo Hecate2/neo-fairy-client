@@ -151,6 +151,9 @@ class Signer:
             'allowedgroups': self.allowedgroups,
             'rules': self.rules
         }
+    
+    def __repr__(self):
+        return self.to_dict().__repr__()
 
 
 if __name__ == '__main__':
