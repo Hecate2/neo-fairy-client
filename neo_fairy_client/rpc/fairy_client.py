@@ -127,9 +127,9 @@ class FairyClient:
             print('WARNING: Will ignore SSL certificate errors!')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        if auto_preparation:
+        if fairy_session and auto_preparation:
             try:
-                if fairy_session and auto_reset_fairy_session:
+                if auto_reset_fairy_session:
                     self.new_snapshots_from_current_system(fairy_session)
                 self.open_fairy_wallet()
                 if auto_set_neo_balance and self.wallet_scripthash:
@@ -615,6 +615,16 @@ class FairyClient:
                   f'as `static readonly UInt160` in your contract')
             raise e
 
+    def get_nef_and_manifest_from_path(self, nef_path_and_filename: str):
+        path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
+        assert nef_filename.endswith('.nef')
+        with open(nef_path_and_filename, 'rb') as f:
+            nef = f.read()
+        contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
+        with open(contract_path_and_filename+".manifest.json", 'r') as f:
+            manifest = f.read()
+        return nef, manifest
+
     def virutal_deploy_from_path(self, nef_path_and_filename: str, fairy_session: str = None,
                                  auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True,
                                  auto_set_client_contract_scripthash=True) -> Hash160Str:
@@ -853,6 +863,10 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepoverassembly", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
+
+    def get_invocation_stack(self, fairy_session: str = None):
+        fairy_session = fairy_session or self.fairy_session
+        return self.meta_rpc_method("getinvocationstack", [fairy_session])
 
     def get_local_variables(self, invocation_stack_index: int = 0, fairy_session: str = None) -> Any:
         fairy_session = fairy_session or self.fairy_session
