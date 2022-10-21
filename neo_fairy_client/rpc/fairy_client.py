@@ -280,55 +280,68 @@ class FairyClient:
             raise ValueError(f'Failed to close wallet.')
         return close_wallet_result
 
-    @staticmethod
-    def parse_stack_from_raw_result(raw_result: dict):
-        def parse_single_item(item: Union[Dict, List]):
-            if 'iterator' in item:
-                item = item['iterator']
-                if item:
-                    if type(item[0]['value']) is not list:
-                        return [parse_single_item(i) for i in item]
-                    else:
-                        return {parse_single_item(i['value'][0]): parse_single_item(i['value'][1]) for i in item}
+    def traverse_iterator(self, sid: str, iid: str, count=100) -> dict:
+        post_data = self.request_body_builder('traverseiterator', [sid, iid, count])
+        self.previous_post_data = post_data
+        result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.requests_timeout, verify=self.verify_SSL).text)['result']
+        result_dict = dict()
+        for kv in result:
+            kv = kv['value']
+            result_dict[self.parse_single_item(kv[0])] = self.parse_single_item(kv[1])
+        return result_dict
+
+    def parse_single_item(self, item: Union[Dict, List]):
+        if 'iterator' in item:
+            item = item['iterator']
+            if item:
+                if type(item[0]['value']) is not list:
+                    return [self.parse_single_item(i) for i in item]
                 else:
-                    assert item == []
-                    return item
-            _type = item['type']
-            if _type == 'Any' and 'value' not in item:
-                return None
+                    return {self.parse_single_item(i['value'][0]): self.parse_single_item(i['value'][1]) for i in item}
             else:
-                value = item['value']
-            if _type == 'Integer':
-                return int(value)
-            elif _type == 'Boolean':
-                return value
-            elif _type == 'ByteString' or _type == 'Buffer':
-                byte_value = base64.b64decode(value)
+                assert item == []
+                return item
+        _type = item['type']
+        if _type == 'Any' and 'value' not in item:
+            return None
+        elif _type == 'InteropInterface' and 'id' in item:
+            session: str = self.previous_raw_result['result']['session']
+            iterator_id: str = item['id']
+            return self.traverse_iterator(session, iterator_id)
+        else:
+            value = item['value']
+        if _type == 'Integer':
+            return int(value)
+        elif _type == 'Boolean':
+            return value
+        elif _type == 'ByteString' or _type == 'Buffer':
+            byte_value = base64.b64decode(value)
+            try:
+                return byte_value.decode()
+            except UnicodeDecodeError:
                 try:
-                    return byte_value.decode()
-                except UnicodeDecodeError:
-                    try:
-                        len_bytes = len(byte_value)
-                        if len_bytes == 20:
-                            return Hash160Str.from_UInt160(UInt160(byte_value))
-                        if len_bytes == 32:
-                            return Hash256Str.from_UInt256(UInt256(byte_value))
-                    except Exception:
-                        pass
-                    # may be an N3 address starting with 'N'
-                    # TODO: decode to N3 address
-                    return byte_value
-            elif _type == 'Array':
-                return [parse_single_item(i) for i in value]
-            elif _type == 'Struct':
-                return tuple([parse_single_item(i) for i in value])
-            elif _type == 'Map':
-                return {parse_single_item(i['key']): parse_single_item(i['value']) for i in value}
-            elif _type == 'Pointer':
-                return int(value)
-            else:
-                raise ValueError(f'Unknown type {_type}')
-        
+                    len_bytes = len(byte_value)
+                    if len_bytes == 20:
+                        return Hash160Str.from_UInt160(UInt160(byte_value))
+                    if len_bytes == 32:
+                        return Hash256Str.from_UInt256(UInt256(byte_value))
+                except Exception:
+                    pass
+                # may be an N3 address starting with 'N'
+                # TODO: decode to N3 address
+                return byte_value
+        elif _type == 'Array':
+            return [self.parse_single_item(i) for i in value]
+        elif _type == 'Struct':
+            return tuple([self.parse_single_item(i) for i in value])
+        elif _type == 'Map':
+            return {self.parse_single_item(i['key']): self.parse_single_item(i['value']) for i in value}
+        elif _type == 'Pointer':
+            return int(value)
+        else:
+            raise ValueError(f'Unknown type {_type}')
+
+    def parse_stack_from_raw_result(self, raw_result: dict):
         result: Dict = raw_result['result']
         if type(result) is not dict or 'stack' not in result:
             return result
@@ -336,10 +349,10 @@ class FairyClient:
             return result['stack']
         stack: List = result['stack']
         if len(stack) > 1:  # typically happens when we invoke a script calling a series of methods
-            return [parse_single_item(item) for item in stack]
+            return [self.parse_single_item(item) for item in stack]
         else:  # if the stack has only 1 item, we simply return the item without a wrapping list
             result: List = stack[0]
-            return parse_single_item(result)
+            return self.parse_single_item(result)
     
     @classmethod
     def parse_params(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes]) -> Dict[str, str]:
@@ -419,9 +432,9 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
             if fairy_session:
-                print(f'{fairy_session}::invokefunction {operation}')
+                print(f'{fairy_session}::{operation}{params} relay={relay} {signers}')
             else:
-                print(f'invokefunction {operation}')
+                print(f'{operation}{params} relay={relay} {signers}')
         
         params = params or []
         signers = to_list(signers or self.signers)
