@@ -628,7 +628,8 @@ class FairyClient:
                   f'as `static readonly UInt160` in your contract')
             raise e
 
-    def get_nef_and_manifest_from_path(self, nef_path_and_filename: str):
+    @staticmethod
+    def get_nef_and_manifest_from_path(nef_path_and_filename: str):
         path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
         assert nef_filename.endswith('.nef')
         with open(nef_path_and_filename, 'rb') as f:

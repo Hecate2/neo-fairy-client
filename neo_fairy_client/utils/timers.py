@@ -7,9 +7,9 @@ import time
 def gen_timestamp_and_date_str_in_days(days: int) -> Tuple[int, str]:
     today = datetime.date.today()
     days_later = today + datetime.timedelta(days=days)
-    days_later_ending_milisecond = (int(time.mktime(time.strptime(str(days_later), '%Y-%m-%d')) + 86400) * 1000 - 1)
+    days_later_ending_millisecond = (int(time.mktime(time.strptime(str(days_later), '%Y-%m-%d')) + 86400) * 1000 - 1)
     days_later_date_str = days_later.strftime('%m_%d_%Y')
-    return days_later_ending_milisecond, days_later_date_str
+    return days_later_ending_millisecond, days_later_date_str
 
 
 def gen_timestamp_and_date_str_in_seconds(seconds: int) -> Tuple[int, str]:

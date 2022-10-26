@@ -33,7 +33,7 @@ class ClientInterpreter(Interpreter):
         return result['result']['stack'][0]['iterator']
     
     @staticmethod
-    def base64_struct_to_bytestrs(base64_struct: dict) -> List[bytes]:
+    def base64_struct_to_bytestrings(base64_struct: dict) -> List[bytes]:
         processed_struct = []
         if type(base64_struct) is dict and 'type' in base64_struct and base64_struct['type'] == 'Struct':
             values = base64_struct['value']
