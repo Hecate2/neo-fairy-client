@@ -430,14 +430,14 @@ class FairyClient:
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> Any:
         fairy_session = fairy_session or self.fairy_session
+        params = params or []
+        signers = to_list(signers or self.signers)
         if self.with_print and with_print:
             if fairy_session:
                 print(f'{fairy_session}::{operation}{params} relay={relay} {signers}')
             else:
                 print(f'{operation}{params} relay={relay} {signers}')
         
-        params = params or []
-        signers = to_list(signers or self.signers)
         parameters = [
             str(scripthash),
             operation,
@@ -463,6 +463,30 @@ class FairyClient:
                                                    do_not_raise_on_result=do_not_raise_on_result,
                                                    with_print=with_print, fairy_session=fairy_session)
     
+    def invokemany(self, call_arguments: List[List[Union[Hash160Str, str, List[Any]]]],
+                   signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
+                   fairy_session: str = None):
+        """
+        :param call_arguments: [ [contract_scripthash: Hash160Str, operation: str, args[] ], [operation, args[] ], [operation] ]
+        """
+        fairy_session = fairy_session or self.fairy_session
+        assert fairy_session  # only supports sessioned calls for now
+        signers = to_list(signers or self.signers)
+        if self.with_print and with_print:
+            print(f'{fairy_session}::{call_arguments} relay={relay} {signers}')
+    
+        parsed_call_arguments = [  # [ [contract_scripthash: Hash160Str, operation: str, args[] ] ]
+            [
+                str(call[0]) if type(call[0]) is Hash160Str else str(self.contract_scripthash),
+                call[1] if type(call[0]) is Hash160Str else call[0],
+                list(map(lambda param: self.parse_params(param), call[-1]) if len(call) >= 2 else [])
+            ]
+            for call in call_arguments
+        ]
+        return self.meta_rpc_method(
+            'invokemanywithsession', [fairy_session, relay or (relay is None and self.function_default_relay), parsed_call_arguments, list(map(lambda signer: signer.to_dict(), signers))], relay=False,
+            do_not_raise_on_result=do_not_raise_on_result)
+
     def invokescript(self, script: Union[str, bytes], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                      fairy_session: str = None) -> Any:
         if type(script) is bytes:
