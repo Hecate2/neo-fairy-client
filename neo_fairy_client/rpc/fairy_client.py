@@ -9,10 +9,18 @@ import urllib3
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
 from neo_fairy_client.utils import Interpreter, to_list
 from neo3.core.types import UInt160, UInt256
-from neo3.contracts import NeoToken, GasToken
+from neo3.contracts import (PolicyContract, NeoToken, GasToken, OracleContract, DesignationContract, ManagementContract, LedgerContract, CryptoContract, StdLibContract)
 from neo3vm import VMState
 
-neo, gas = NeoToken(), GasToken()
+PolicyAddress = Hash160Str.from_UInt160(PolicyContract().hash)
+NeoAddress = Hash160Str.from_UInt160(NeoToken().hash)
+GasAddress = Hash160Str.from_UInt160(GasToken().hash)
+OracleAddress = Hash160Str.from_UInt160(OracleContract().hash)
+DesignationAddress = Hash160Str.from_UInt160(DesignationContract().hash)
+ManagementAddress = Hash160Str.from_UInt160(ManagementContract().hash)
+LedgerAddress = Hash160Str.from_UInt160(LedgerContract().hash)
+CryptoLibAddress = Hash160Str.from_UInt160(CryptoContract().hash)
+StdLibAddress = Hash160Str.from_UInt160(StdLibContract().hash)
 
 RequestExceptions = (
     requests.RequestException,
@@ -531,20 +539,20 @@ class FairyClient:
         ])
     
     def send_neo_to_address(self, to_address: Hash160Str, value: int):
-        return self.sendtoaddress(Hash160Str.from_UInt160(neo.hash), to_address, value)
+        return self.sendtoaddress(NeoAddress, to_address, value)
     
     def send_gas_to_address(self, to_address: Hash160Str, value: int):
-        return self.sendtoaddress(Hash160Str.from_UInt160(gas.hash), to_address, value)
+        return self.sendtoaddress(GasAddress, to_address, value)
     
     def getwalletbalance(self, asset_id: Hash160Str) -> int:
         return int(self.meta_rpc_method('getwalletbalance', [asset_id.to_str()])['balance'])
     
     def get_neo_balance(self, owner: Hash160Str = None, with_print=False) -> int:
-        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(neo.hash), 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
+        return self.invokefunction_of_any_contract(NeoAddress, 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(NeoToken().hash))
 
     def get_gas_balance(self, owner: Hash160Str = None, with_print=False) -> int:
-        return self.invokefunction_of_any_contract(Hash160Str.from_UInt160(gas.hash), 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
+        return self.invokefunction_of_any_contract(GasAddress, 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
     
     def get_nep17token_balance(self, token_address: Hash160Str, owner: Hash160Str = None, with_print=False):
