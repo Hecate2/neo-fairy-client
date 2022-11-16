@@ -206,8 +206,10 @@ class FairyClient:
             raise ValueError(result['error']['message'])
         if type(result['result']) is dict:
             result_result: dict = result['result']
-            self.previous_gas_consumed = int(result_result.get('gasconsumed', 0)) or None
-            self.previous_network_fee = int(result_result.get('networkfee', 0)) or None
+            if gas_consumed := result_result.get('gasconsumed'):
+                self.previous_gas_consumed = int(gas_consumed)
+            if gas_consumed := result_result.get('networkfee'):
+                self.previous_network_fee = int(gas_consumed)
             if 'exception' in result_result and result_result['exception'] is not None:
                 if do_not_raise_on_result:
                     return result_result['exception']
