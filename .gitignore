@@ -1,2 +1,5 @@
 /.idea/*
 *__pycache__*
+/build/*
+/dist/*
+neo_fairy_client.egg-info/*
