@@ -72,6 +72,7 @@ class FairyClient:
                  wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
                  contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
                  fairy_session: str = None, function_default_relay=True, script_default_relay=False,
+                 confirm_relay_to_blockchain=False,
                  auto_reset_fairy_session=True,
                  with_print=True, verbose_return=False, verify_SSL: bool = True,
                  requests_session: requests.Session = default_requests_session,
@@ -83,7 +84,7 @@ class FairyClient:
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
         Use fairy_session strings to name your snapshots.
-        :param target_url: url to the rpc server affliated to neo-cli
+        :param target_url: url to the rpc server affiliated to neo-cli
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
         :param wallet_path: 'wallets/dev.json'
         :param wallet_password: '12345678'
@@ -93,6 +94,8 @@ class FairyClient:
             If None, will use normal RPC without session string. No snapshot will be used or recorded
         :param function_default_relay: if True, will write your transaction to chain or fairy snapshot
         :param script_default_relay: if True, will write your transaction to chain or fairy snapshot
+        :param confirm_relay_to_blockchain: if True, will ask for your confirmation before
+            writing any transaction to the actual blockchain. Recommended for doing anything critical on the mainnet.
         :param with_print: print results for each RPC call
         :param verbose_return: return (parsed_result, raw_result, post_data) if True. return parsed result if False.
             This is to avoid reading previous_result for concurrency safety.
@@ -127,6 +130,7 @@ class FairyClient:
         self.verbose_return: bool = verbose_return
         self.function_default_relay: bool = function_default_relay
         self.script_default_relay: bool = script_default_relay
+        self.confirm_relay_to_blockchain: bool = confirm_relay_to_blockchain
         self.fairy_session: Union[str, None] = fairy_session
         self.verify_SSL: bool = verify_SSL
         self.requests_timeout: Union[int, None] = requests_timeout
@@ -226,7 +230,10 @@ class FairyClient:
                 if 'tx' in result_result:
                     tx = result_result['tx']
                     self.previous_txBase64Str = tx
-                    self.sendrawtransaction(tx)
+                    if self.confirm_relay_to_blockchain is False \
+                        or input(f"Write transaction {tx} to the actual blockchain instead of Fairy? "
+                                 f"Y/[n]: ") == "Y":
+                        self.sendrawtransaction(tx)
                 # else:
                 #     self.previous_txBase64Str = None
         self.previous_raw_result = result
