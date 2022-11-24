@@ -669,6 +669,9 @@ class FairyClient:
                   f'as `static readonly UInt160` in your contract')
             raise e
 
+    def await_confirmed_transaction(self, tx_hash: Hash256Str, verbose=True, wait_block_count = 2):
+        return self.meta_rpc_method('awaitconfirmedtransaction', [tx_hash, verbose, wait_block_count])
+
     @staticmethod
     def get_nef_and_manifest_from_path(nef_path_and_filename: str):
         path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
