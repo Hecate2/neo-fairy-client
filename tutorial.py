@@ -3,12 +3,9 @@ from neo_fairy_client.utils import Hash160Str
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
-wallet_path = 'testnet.json'
-wallet_password = '1'
 client = FairyClient(fairy_session='Hello world! Your first contact with Fairy!',
-            wallet_address=wallet_address,
-            wallet_path=wallet_path, wallet_password=wallet_password,
-            auto_preparation=True)
+                     wallet_address_or_scripthash=wallet_address,
+                     auto_preparation=True)
 
 nef_file, manifest = client.get_nef_and_manifest_from_path('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef')
 test_nopht_d_hash = client.virutal_deploy_from_path('../NFTLoan/NophtD/bin/sc/TestNophtD.nef')

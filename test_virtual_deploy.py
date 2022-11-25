@@ -30,10 +30,9 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
 FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
 fairy_session = 'NophtD'
-lender_client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, fairy_session=fairy_session, signers=lender, with_print=True)
-borrower_client = FairyClient(target_url, borrower_address, borrower_wallet_path, wallet_password, contract_scripthash=anyupdate_short_safe_hash, fairy_session=fairy_session, signers=borrower, with_print=True)
+lender_client = FairyClient(target_url, wallet_address, fairy_session=fairy_session, signers=lender, with_print=True)
+borrower_client = FairyClient(target_url, borrower_address, contract_scripthash=anyupdate_short_safe_hash, fairy_session=fairy_session, signers=borrower, with_print=True)
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
-lender_client.open_fairy_wallet()
 lender_client.new_snapshots_from_current_system()
 lender_client.set_gas_balance(100_0000_0000)
 test_nopht_d_hash = lender_client.virtual_deploy(nophtd_nef_file, nophtd_manifest)

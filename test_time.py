@@ -29,12 +29,11 @@ with open('getTimeContract.manifest.json', 'r') as f:
     manifest = json.dumps(manifest_dict, separators=(',', ':'))
 
 session = 'Runtime.Time'
-client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, signers=signer,
+client = FairyClient(target_url, wallet_address, signers=signer,
                      with_print=True, fairy_session=session)
 print(client.new_snapshots_from_current_system())
 print(client.list_snapshots())
 
-client.open_fairy_wallet()
 client.set_gas_balance(100_0000_0000)
 anyupdate_short_safe_hash = client.virtual_deploy(anyupdate_nef_file, anyupdate_manifest)
 test_nopht_d_hash = client.virtual_deploy(test_nopht_d_nef, test_nopht_d_manifest)

@@ -3,10 +3,8 @@ from neo_fairy_client.utils.WitnessRule import *
 
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
-wallet_path = 'testnet.json'
-wallet_password = '1'
 
-client = FairyClient(fairy_session='test-witness-rule', wallet_address=wallet_address, wallet_path=wallet_path, wallet_password=wallet_password, with_print=False)
+client = FairyClient(fairy_session='test-witness-rule', wallet_address_or_scripthash=wallet_address, with_print=False)
 nftloan_scripthash = client.virutal_deploy_from_path('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef')
 test_nopht_d_hash = client.virutal_deploy_from_path('../NFTLoan/NophtD/bin/sc/TestNophtD.nef')
 client.contract_scripthash = nftloan_scripthash

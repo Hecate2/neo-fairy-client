@@ -6,12 +6,9 @@ from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
-wallet_path = 'testnet.json'
-wallet_password = '1'
 
 borrower_address = 'NaainHz563mJLsHRsPD4NrKjMEQGBXXJY9'
 borrower_scripthash = Hash160Str.from_address(borrower_address)
-borrower_wallet_path = 'user1.json'
 
 lender = Signer(wallet_scripthash, scopes=WitnessScope.Global)
 borrower = Signer(borrower_scripthash, scopes=WitnessScope.Global)
@@ -36,9 +33,8 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
 FAULT_MESSAGE = 'ASSERT is executed with false result.'
 
 fairy_session = 'NophtD'
-lender_client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, fairy_session=fairy_session, signers=lender, with_print=True)
-borrower_client = FairyClient(target_url, borrower_address, borrower_wallet_path, wallet_password, fairy_session=fairy_session, signers=borrower, with_print=True)
-lender_client.open_fairy_wallet()
+lender_client = FairyClient(target_url, wallet_address, fairy_session=fairy_session, signers=lender, with_print=True)
+borrower_client = FairyClient(target_url, borrower_address, fairy_session=fairy_session, signers=borrower, with_print=True)
 print('#### CHECKLIST BEFORE TEST')
 print(lender_client.delete_snapshots(lender_client.list_snapshots()))
 print(lender_client.new_snapshots_from_current_system())
@@ -127,6 +123,7 @@ borrower_client.fairy_session = fairy_session_correct_payback
 lender_client.fairy_session = fairy_session_correct_payback
 rental_period = 16000
 print(execution_timestamp := borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 15, 1, rental_period]]))
+print(borrower_client.totalfee, borrower_client.previous_system_fee, borrower_client.previous_network_fee)
 assert execution_timestamp == borrow_timestamp
 # cannot borrow the same token from the same owner twice in a single block
 assert FAULT_MESSAGE in borrower_client.invokefunction('anyUpdate', params=[nef_file, manifest, 'borrow', [wallet_scripthash, borrower_scripthash, 10, test_nopht_d_hash, 1, rental_period]], do_not_raise_on_result=True)

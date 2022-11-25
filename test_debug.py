@@ -7,12 +7,9 @@ from neo3vm import VMState
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
-wallet_path = 'testnet.json'
-wallet_password = '1'
 
 borrower_address = 'NaainHz563mJLsHRsPD4NrKjMEQGBXXJY9'
 borrower_scripthash = Hash160Str.from_address(borrower_address)
-borrower_wallet_path = 'user1.json'
 
 lender = Signer(wallet_scripthash, scopes=WitnessScope.Global)
 borrower = Signer(borrower_scripthash, scopes=WitnessScope.Global)
@@ -30,8 +27,7 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef.txt', 'r') as f:
     dumpnef = f.read()
 
 fairy_session = 'debug'
-client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, with_print=True, fairy_session=fairy_session, signers=lender)
-client.open_fairy_wallet()
+client = FairyClient(target_url, wallet_address, with_print=True, fairy_session=fairy_session, signers=lender)
 client.new_snapshots_from_current_system()
 client.set_gas_balance(100_0000_0000)
 client.contract_scripthash = client.virtual_deploy(nef_file, manifest)

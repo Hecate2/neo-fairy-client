@@ -6,8 +6,6 @@ from neo_fairy_client.utils.interpreters import Interpreter
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'
 wallet_scripthash = Hash160Str.from_address(wallet_address)
-wallet_path = 'testnet.json'
-wallet_password = '1'
 
 with open('../neo-fairy-oracle/oracle-demo/bin/sc/oracle-demo.nef', 'rb') as f:
     nef_file = f.read()
@@ -19,9 +17,7 @@ with open('../neo-fairy-oracle/oracle-demo/bin/sc/oracle-demo.nef.txt', 'r') as 
     dumpnef = f.read()
 
 fairy_session = 'oracle'
-client = FairyClient(target_url, wallet_address, wallet_path, wallet_password, fairy_session=fairy_session, with_print=True)
-
-client.open_fairy_wallet()
+client = FairyClient(target_url, wallet_address, fairy_session=fairy_session, with_print=True)
 
 client.delete_snapshots(client.list_snapshots())
 client.new_snapshots_from_current_system()

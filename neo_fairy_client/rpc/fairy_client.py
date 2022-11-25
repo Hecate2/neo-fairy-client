@@ -69,7 +69,7 @@ class RpcBreakpoint:
 
 class FairyClient:
     def __init__(self, target_url: str = 'http://localhost:16868',
-                 wallet_address: str = None, wallet_path: str = None, wallet_password: str = None,
+                 wallet_address_or_scripthash: Union[str, Hash160Str] = None,
                  contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
                  fairy_session: str = None, function_default_relay=True, script_default_relay=False,
                  confirm_relay_to_blockchain=False,
@@ -79,15 +79,14 @@ class FairyClient:
                  requests_timeout: Union[int, None] = default_request_timeout,
                  auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000,
                  auto_preparation=True,
-                 hook_function_after_rpc_call: Callable = None):
+                 hook_function_after_rpc_call: Callable = None,
+                 default_fairy_wallet_scripthash: Hash160Str = Hash160Str('0xd2cefc96ad5cb7b625a0986ef6badde0533731d5')):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
         Use fairy_session strings to name your snapshots.
         :param target_url: url to the rpc server affiliated to neo-cli
-        :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
-        :param wallet_path: 'wallets/dev.json'
-        :param wallet_password: '12345678'
+        :param wallet_address_or_scripthash: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp"
         :param signers: by default, which account(s) will sign the transactions with which scope
             https://docs.neo.org/docs/en-us/basic/concept/transaction.html#signature-scope
         :param fairy_session: Any string designated by you to name your session which contains snapshot.
@@ -108,18 +107,19 @@ class FairyClient:
         self.target_url: str = target_url
         self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
         self.requests_session: requests.Session = requests_session
-        if wallet_address:
-            self.wallet_address: Union[str, None] = wallet_address
-            wallet_scripthash = Hash160Str.from_address(wallet_address)
-            self.wallet_scripthash: Union[Hash160Str, None] = wallet_scripthash
-            self.signers: List[Signer] = to_list(signers) or [Signer(wallet_scripthash)]
+        if wallet_address_or_scripthash:
+            if wallet_address_or_scripthash.startswith('N'):
+                self.wallet_address: Union[str, None] = wallet_address_or_scripthash
+                self.wallet_scripthash: Union[Hash160Str, None] = Hash160Str.from_address(wallet_address_or_scripthash)
+            else:
+                self.wallet_scripthash = wallet_address_or_scripthash
+                self.wallet_address = wallet_address_or_scripthash.to_address()
+            self.signers: List[Signer] = to_list(signers) or [Signer(self.wallet_scripthash)]
         else:
             self.wallet_address = None
             self.wallet_scripthash = None
             self.signers: List[Signer] = []
             print('WARNING: No wallet address specified when building the fairy client!')
-        self.wallet_path: Union[str, None] = wallet_path
-        self.wallet_password: Union[str, None] = wallet_password
         self.previous_post_data = None
         self.with_print: bool = with_print
         self.previous_raw_result: Union[dict, None] = None
@@ -135,6 +135,7 @@ class FairyClient:
         self.verify_SSL: bool = verify_SSL
         self.requests_timeout: Union[int, None] = requests_timeout
         self.hook_function_after_rpc_call = hook_function_after_rpc_call
+        self.default_fairy_wallet_scripthash = default_fairy_wallet_scripthash
         if verify_SSL is False:
             print('WARNING: Will ignore SSL certificate errors!')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -143,14 +144,14 @@ class FairyClient:
             try:
                 if auto_reset_fairy_session:
                     self.new_snapshots_from_current_system(fairy_session)
-                self.open_fairy_wallet()
+                    self.set_gas_balance(1000_0000_0000, fairy_session=fairy_session, account=default_fairy_wallet_scripthash)
                 if auto_set_neo_balance and self.wallet_scripthash:
                     self.set_neo_balance(auto_set_neo_balance)
                 if auto_set_gas_balance and self.wallet_scripthash:
                     self.set_gas_balance(auto_set_gas_balance)
             except:
                 traceback.print_exc()
-                print(f"WARNING: Failed at some fairy operations at {target_url} with wallet `{wallet_path}`!")
+                print(f"WARNING: Failed at some fairy operations at {target_url}!")
 
     def set_wallet_address_and_signers(self, wallet_address: Union[str, Hash160Str], signers: Union[Signer, List[Signer]] = None):
         """
@@ -271,15 +272,11 @@ class FairyClient:
     def previous_system_fee(self):
         return self.previous_gas_consumed
     
-    def openwallet(self, path: str = None, password: str = None) -> dict:
+    def openwallet(self, path: str, password: str) -> dict:
         """
         WARNING: usually you should use this method along with __init__.
         Use another TestClient object to open another wallet
         """
-        if not path:
-            path = self.wallet_path
-        if not password:
-            password = self.wallet_password
         if self.verbose_return:
             open_wallet_result, _, _ = self.meta_rpc_method("openwallet", [path, password])
         else:
@@ -576,27 +573,35 @@ class FairyClient:
     before using the following methods!
     """
 
-    def open_fairy_wallet(self, path: str = None, password: str = None) -> dict:
-        if not path:
-            path = self.wallet_path
-        if not password:
-            password = self.wallet_password
+    def open_default_fairy_wallet(self, path: str, password: str) -> dict:
         if self.verbose_return:
-            open_wallet_result, _, _ = self.meta_rpc_method("openfairywallet", [path, password])
+            open_wallet_result, _, _ = self.meta_rpc_method("opendefaultfairywallet", [path, password])
         else:
-            open_wallet_result = self.meta_rpc_method("openfairywallet", [path, password])
+            open_wallet_result = self.meta_rpc_method("opendefaultfairywallet", [path, password])
         if not open_wallet_result:
-            raise ValueError(f'Failed to open wallet {path} with given password.')
+            raise ValueError(f'Failed to open default wallet {path} with given password.')
         return open_wallet_result
 
-    def close_fairy_wallet(self) -> dict:
+    def reset_default_fairy_wallet(self) -> dict:
         if self.verbose_return:
-            close_wallet_result, _, _ = self.meta_rpc_method("closefairywallet", [])
+            close_wallet_result, _, _ = self.meta_rpc_method("resetdefaultfairywallet", [])
         else:
-            close_wallet_result = self.meta_rpc_method("closefairywallet", [])
+            close_wallet_result = self.meta_rpc_method("resetdefaultfairywallet", [])
         if not close_wallet_result:
-            raise ValueError(f'Failed to close wallet.')
+            raise ValueError(f'Failed to reset default wallet.')
         return close_wallet_result
+
+    def set_session_fairy_wallet_with_NEP2(self, nep2: str, password: str, fairy_session: str = None) -> dict:
+        open_wallet_result = self.meta_rpc_method("setsessionfairywalletwithnep2", [nep2, password, fairy_session or self.fairy_session])
+        if not open_wallet_result:
+            raise ValueError(f'Failed to open NEP2 wallet {nep2} with given password.')
+        return open_wallet_result
+
+    def set_session_fairy_wallet_with_WIF(self, wif: str, password: str, fairy_session: str = None) -> dict:
+        open_wallet_result = self.meta_rpc_method("setsessionfairywalletwithwif", [wif, password, fairy_session or self.fairy_session])
+        if not open_wallet_result:
+            raise ValueError(f'Failed to open WIF wallet {wif} with given password.')
+        return open_wallet_result
 
     def get_time_milliseconds(self) -> int:
         """
@@ -654,14 +659,14 @@ class FairyClient:
             result[k] = None if not v else int(v)
         return result
 
-    def virtual_deploy(self, nef: bytes, manifest: str, fairy_session: str = None) -> Hash160Str:
+    def virtual_deploy(self, nef: bytes, manifest: str, signers: Union[Signer, List[Signer]] = None, fairy_session: str = None) -> Hash160Str:
         fairy_session = fairy_session or self.fairy_session
         # check manifest
         manifest_dict = json.loads(manifest)
         if manifest_dict["permissions"] == [{'contract': '0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0', 'methods': ['deserialize', 'serialize']}, {'contract': '0xfffdc93764dbaddd97c48f252a53ea4643faa3fd', 'methods': ['destroy', 'getContract', 'update']}]:
             print('!!!SERIOUS WARNING: Did you write [ContractPermission("*", "*")] in your contract?!!!')
         try:
-            return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest])[fairy_session])
+            return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest, list(map(lambda signer: signer.to_dict(), to_list(signers or self.signers)))])[fairy_session])
         except Exception as e:
             print(f'If you have weird exceptions from this method, '
                   f'check if you have written any `null` to contract storage in `_deploy` method. '
@@ -698,7 +703,7 @@ class FairyClient:
         contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
         with open(contract_path_and_filename+".manifest.json", 'r') as f:
             manifest = f.read()
-        contract_hash = self.virtual_deploy(nef, manifest, fairy_session)
+        contract_hash = self.virtual_deploy(nef, manifest, fairy_session=fairy_session)
         nefdbgnfo_path_and_filename = contract_path_and_filename + '.nefdbgnfo'
         dumpnef_path_and_filename = contract_path_and_filename + '.nef.txt'
         if os.path.exists(nefdbgnfo_path_and_filename):

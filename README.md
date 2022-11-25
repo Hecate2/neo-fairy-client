@@ -4,7 +4,7 @@ Features comply with https://github.com/Hecate2/neo-rpc-server-with-session/ .
 
 #### Tutorial for testing
 
-Python >= 3.8 required! Some steps in this tutorial is to help you understand the details about how Fairy works. In actual combat, you can read the source codes of `FairyClient` and enjoy many automatic conveniences that Fairy offers. 
+**Python >= 3.8 required!** Some steps in this tutorial is to help you understand the details about how Fairy works. In actual combat, you can read the source codes of `FairyClient` and enjoy many automatic conveniences that Fairy offers. 
 
 ##### Extremely fast but close-to-base version:
 
@@ -14,7 +14,7 @@ Visit [test_nftloan.py](test_nftloan.py) as a sample of usage. The tested contra
 
 Head to https://github.com/Hecate2/neo-fairy-test/ to prepare it. You do not really have to wait for the blocks to be completely synchronized. The plugin is an HTTP server that will help you interact with Neo.
 
-##### Step 2: With your client, prepare your server wallet snapshot
+##### Step 2: Using your client, prepare your server snapshot
 
 Place a json file of neo wallet (assumed to be `testnet.json` with password `1`) beside `neo-cli.exe`, and call your Fairy server with the following Python codes:
 
@@ -27,12 +27,14 @@ wallet_scripthash = Hash160Str.from_address(wallet_address)
 wallet_path = 'testnet.json'
 wallet_password = '1'
 client = FairyClient(fairy_session='Hello world! Your first contact with Fairy!',
-            wallet_address=wallet_address,
+            wallet_address_or_scripthash=wallet_address,
             wallet_path=wallet_path, wallet_password=wallet_password,
             auto_preparation=True)
 ```
 
 Here `auto_preparation=True` tries to delete the old snapshot on the Fairy server named `Hello world! Your first contact with Fairy!`, and creates a new snapshot of the same name based on the current Neo system snapshot, then opens the wallet on Fairy server and automatically sets you NEO and GAS balance both to 100 (*10^8). 
+
+If you are planning to run a public Fairy server, you need to open the Fairy wallet so that users do not have to open it through RPC. I am also planning to remove wallet objects in Fairy service. 
 
 ##### Step 3: Deploy your contract virtually
 
@@ -92,7 +94,7 @@ And **happily we will see a lot of red alerts** ending with:
 [0x5c1068339fae89eb1a743909d0213e1d99dc5dc9] AnyUpdateShortSafe: Transfer failed
 ```
 
-WTF? By reading the codes, we can assume that we have forgotten to add proper witnesses (in other words, signatures) to our call. But how to?
+**W**hiskey **T**ango **F**oxtrot? Well, by reading the codes, we can assume that we have forgotten to add proper witnesses (in other words, signatures) to our call (we are not going to explain how to make the assumption for now). But how to add signatures?
 
 ##### Step 6: Adding signatures to your call
 
@@ -135,7 +137,7 @@ client.fairy_session = 'Cloned snapshot'  # selecting the new snapshot
 
 Now just select a snapshot continue to invoke more methods! Everything happening in the cloned snapshot will affect neither the real blockchain nor the old snapshot. 
 
-##### Last step: Understanding the errors
+##### Last step: Understanding the errors and fixing the bugs
 
 We are not going to continue with the cloned snapshots, but explain the red error information given by Fairy. Head to [tutorial.py](tutorial.py) and comment out the line mentioned in Step 4:
 
@@ -206,6 +208,8 @@ client.set_debug_info(nefdbgnfo, dumpnef)  # the debug info is by default regist
 
 ##### Step 1: Call a method in debug mode
 
+Your debugging runtime storage environment is always inherited from a test session. It is recommended to build the debugging environment automatically with testing codes.
+
 ```python
 print(breakpoint := client.debug_function_with_session(  # do not invokefunction in debugging!
     'registerRental',
@@ -214,7 +218,7 @@ print(breakpoint := client.debug_function_with_session(  # do not invokefunction
 ))
 ```
 
-You should get the following to be printed
+With `signers=None` your Fairy client uses `CalledByEntry` signature, which is actually insufficient in our case. You should get the following to be printed
 
 ```
 Cloned snapshot::debugfunction registerRental
