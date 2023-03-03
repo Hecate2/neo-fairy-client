@@ -118,7 +118,7 @@ class FairyClient:
         else:
             self.wallet_address = None
             self.wallet_scripthash = None
-            self.signers: List[Signer] = []
+            self.signers: List[Signer] = signers or []
             print('WARNING: No wallet address specified when building the fairy client!')
         self.previous_post_data = None
         self.with_print: bool = with_print
