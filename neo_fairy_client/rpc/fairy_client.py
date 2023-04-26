@@ -629,7 +629,13 @@ class FairyClient:
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
-    def set_snapshot_timestamp(self, timestamp_ms: Union[int, None], fairy_session: str = None) -> Dict[str, int]:
+    def set_snapshot_timestamp(self, timestamp_ms: Union[int, None] = None, fairy_session: str = None) -> Dict[str, int]:
+        """
+        
+        :param timestamp_ms: use None to reset to current block time
+        :param fairy_session:
+        :return:
+        """
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("setsnapshottimestamp", [fairy_session, timestamp_ms])
     
@@ -763,6 +769,8 @@ class FairyClient:
         balance = int(balance)
         fairy_session = fairy_session or self.fairy_session
         account = account or self.wallet_scripthash
+        if not account:
+            raise ValueError('No account specified')
         return self.meta_rpc_method("setneobalance", [fairy_session, account, balance])
 
     def set_gas_balance(self, balance: Union[int, float], fairy_session: str = None, account: Hash160Str = None):
@@ -862,7 +870,7 @@ class FairyClient:
     def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
-                                       with_print=True, fairy_session: str = None) -> Any:
+                                       with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         scripthash = scripthash or self.contract_scripthash
         fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
@@ -891,7 +899,7 @@ class FairyClient:
     def debug_function_with_session(self, operation: str,
                                         params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
                                         signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
-                                        with_print=True, fairy_session: str = None) -> Any:
+                                        with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         return self.debug_any_function_with_session(
             self.contract_scripthash, operation,
             params=params, signers=signers, relay=relay, do_not_raise_on_result=do_not_raise_on_result,
