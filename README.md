@@ -36,6 +36,34 @@ Here `auto_preparation=True` tries to delete the old snapshot on the Fairy serve
 
 If you are planning to run a public Fairy server, you need to open the Fairy wallet so that users do not have to open it through RPC. I am also planning to remove wallet objects in Fairy service. 
 
+#### Step 2.1: Mint billions of NEO and transfer them!
+
+(Of course these are just fairy NEO in the memory of your imaginiation)
+
+```python
+from neo_fairy_client.utils import neo
+client.set_neo_balance(1_000_000_000)
+print(f"Your NEO balance: {client.invokefunction_of_any_contract(neo.hash, 'balanceOf', [wallet_scripthash])}")
+client.invokefunction_of_any_contract(neo.hash, 'transfer', [wallet_scripthash, Hash160Str.zero(), 1_000_000_000, None])
+print(f"NEO balance of zero address: {client.invokefunction_of_any_contract(neo.hash, 'balanceOf', [Hash160Str.zero()])}")
+```
+
+```
+Hello world! Your first contact with Fairy!::balanceOf[0xb1983fa2479a0c8e2beae032d2df564b5451b7a5] relay=None [{'account': '0xb1983fa2479a0c8e2beae032d2df564b5451b7a5', 'scopes': 'CalledByEntry', 'allowedcontracts': [], 'allowedgroups': [], 'rules': []}]
+Your NEO balance: 1000000000
+Hello world! Your first contact with Fairy!::transfer[0xb1983fa2479a0c8e2beae032d2df564b5451b7a5, 0x0000000000000000000000000000000000000000, 1000000000, None] relay=None [{'account': '0xb1983fa2479a0c8e2beae032d2df564b5451b7a5', 'scopes': 'CalledByEntry', 'allowedcontracts': [], 'allowedgroups': [], 'rules': []}]
+Hello world! Your first contact with Fairy!::balanceOf[0x0000000000000000000000000000000000000000] relay=None [{'account': '0xb1983fa2479a0c8e2beae032d2df564b5451b7a5', 'scopes': 'CalledByEntry', 'allowedcontracts': [], 'allowedgroups': [], 'rules': []}]
+NEO balance of zero address: 1000000000
+```
+
+##### Step 2.2: I just want to interact with the real mainnet and testnet...
+
+**DO NOT** set the `fairy_session` string for you `FairyClient`, or set it to `None`. Fairy will play real transactions without fairy session. Set `function_default_relay=True` in `FairyClient` or `relay=True` in a single `invokefunction` to automatically relay the transaction. 
+
+**BE CAREFUL: ** By default, Fairy does interact with the real blockchain and relay transactions. **Do not use a wallet with real assets when you just want a test!**
+
+Sometimes you may want to actually relay something after fairy tests. In such cases, set `confirm_relay_to_blockchain=True` in `FairyClient` to prevent automatic relaying as the final safety belt. 
+
 ##### Step 3: Deploy your contract virtually
 
 Get the tested contracts in my example through these repos:
