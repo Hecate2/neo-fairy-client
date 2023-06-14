@@ -2,6 +2,8 @@ Non-official test suite inherited from https://github.com/Hecate2/neo-ruler/ , i
 
 Features comply with https://github.com/Hecate2/neo-rpc-server-with-session/ .
 
+A crude JavaScript version is available at https://github.com/Hecate2/neo-fairy-gate/blob/master/src/libs/NeoFairyClient.jsx .
+
 #### Tutorial for testing
 
 **Python >= 3.8 required!** Some steps in this tutorial is to help you understand the details about how Fairy works. In actual combat, you can read the source codes of `FairyClient` and enjoy many automatic conveniences that Fairy offers. 
