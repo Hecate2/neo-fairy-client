@@ -227,7 +227,8 @@ class FairyClient:
             if relay or (relay is None and self.function_default_relay):
                 if method in {'invokefunction', 'invokescript'} and 'tx' not in result_result:
                     raise ValueError('No `tx` in response. '
-                                     'Did you call `client.openwallet()` before `invokefunction`?')
+                                     'Did you call `client.openwallet()` before `invokefunction`?'
+                                     'Alternatively, set FairyClient(function_default_relay=False)')
                 if 'tx' in result_result:
                     tx = result_result['tx']
                     self.previous_txBase64Str = tx
@@ -679,6 +680,13 @@ class FairyClient:
                   f'Especially, consider marking your UInt160 properties of class '
                   f'as `static readonly UInt160` in your contract')
             raise e
+
+    def get_contract(self, scripthash: Hash160Str = None, fairy_session: str = None):
+        scripthash = scripthash or self.contract_scripthash
+        if not scripthash:
+            raise ValueError("No contract scripthash specified!")
+        fairy_session = fairy_session or self.fairy_session
+        return self.meta_rpc_method("getcontract", [fairy_session, scripthash])
 
     def await_confirmed_transaction(self, tx_hash: Hash256Str, verbose=True, wait_block_count = 2):
         return self.meta_rpc_method('awaitconfirmedtransaction', [tx_hash, verbose, wait_block_count])
