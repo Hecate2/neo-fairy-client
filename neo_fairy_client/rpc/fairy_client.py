@@ -208,7 +208,7 @@ class FairyClient:
         self.previous_post_data = post_data
         result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.requests_timeout, verify=self.verify_SSL).text)
         if 'error' in result:
-            raise ValueError(f"""{result['error']['message']}\r\n{result['error']['data']}""")
+            raise ValueError(f"""{result['error']['message']}\r\n{result['error']['data']}""" if 'data' in result['error'] else result['error'])
         if type(result['result']) is dict:
             result_result: dict = result['result']
             if gas_consumed := result_result.get('gasconsumed'):
