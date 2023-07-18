@@ -370,7 +370,7 @@ class FairyClient:
             return self.parse_single_item(result)
     
     @classmethod
-    def parse_params(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes]) -> Dict[str, str]:
+    def parse_params(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes, bytearray]) -> Dict[str, str]:
         type_param = type(param)
         if type_param is UInt160:
             return {
@@ -412,7 +412,7 @@ class FairyClient:
                 'type': 'String',
                 'value': param,
             }
-        elif type_param is bytes:
+        elif type_param is bytes or type_param is bytearray:
             # not the best way to judge, but maybe no better method
             try:
                 return {
@@ -441,7 +441,7 @@ class FairyClient:
         raise ValueError(f'Unable to handle param {param} with type {type_param}')
     
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
-                                       params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
+                                       params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> Any:
         fairy_session = fairy_session or self.fairy_session
@@ -468,7 +468,7 @@ class FairyClient:
                                           do_not_raise_on_result=do_not_raise_on_result)
         return result
     
-    def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160]] = None,
+    def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160, bytes, bytearray]] = None,
                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
                        fairy_session: str = None) -> Any:
         if self.contract_scripthash is None or self.contract_scripthash == Hash160Str.zero():
