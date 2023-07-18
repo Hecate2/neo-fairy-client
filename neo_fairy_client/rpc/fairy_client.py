@@ -876,7 +876,7 @@ class FairyClient:
         return self.meta_rpc_method("getmethodbyinstructionpointer", [scripthash, instruction_pointer])
 
     def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
-                                       params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
+                                       params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         scripthash = scripthash or self.contract_scripthash
@@ -905,7 +905,7 @@ class FairyClient:
                              exception=result['exception'], result_stack=self.parse_stack_from_raw_result(raw_result))
 
     def debug_function_with_session(self, operation: str,
-                                        params: List[Union[str, int, dict, Hash160Str, UInt160]] = None,
+                                        params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                         signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
                                         with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         return self.debug_any_function_with_session(
