@@ -593,13 +593,13 @@ class FairyClient:
         return close_wallet_result
 
     def set_session_fairy_wallet_with_NEP2(self, nep2: str, password: str, fairy_session: str = None) -> dict:
-        open_wallet_result = self.meta_rpc_method("setsessionfairywalletwithnep2", [nep2, password, fairy_session or self.fairy_session])
+        open_wallet_result = self.meta_rpc_method("setsessionfairywalletwithnep2", [fairy_session or self.fairy_session, nep2, password])
         if not open_wallet_result:
             raise ValueError(f'Failed to open NEP2 wallet {nep2} with given password.')
         return open_wallet_result
 
     def set_session_fairy_wallet_with_WIF(self, wif: str, password: str, fairy_session: str = None) -> dict:
-        open_wallet_result = self.meta_rpc_method("setsessionfairywalletwithwif", [wif, password, fairy_session or self.fairy_session])
+        open_wallet_result = self.meta_rpc_method("setsessionfairywalletwithwif", [fairy_session or self.fairy_session, wif, password])
         if not open_wallet_result:
             raise ValueError(f'Failed to open WIF wallet {wif} with given password.')
         return open_wallet_result
