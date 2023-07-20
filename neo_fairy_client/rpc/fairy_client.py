@@ -207,6 +207,7 @@ class FairyClient:
         post_data = self.request_body_builder(method, parameters)
         self.previous_post_data = post_data
         result = json.loads(self.requests_session.post(self.target_url, post_data, timeout=self.requests_timeout, verify=self.verify_SSL).text)
+        self.previous_raw_result = result
         if 'error' in result:
             raise ValueError(f"""{result['error']['message']}\r\n{result['error']['data']}""" if 'data' in result['error'] else result['error'])
         if type(result['result']) is dict:
@@ -238,7 +239,6 @@ class FairyClient:
                         self.sendrawtransaction(tx)
                 # else:
                 #     self.previous_txBase64Str = None
-        self.previous_raw_result = result
         self.previous_result = self.parse_stack_from_raw_result(result)
         if self.hook_function_after_rpc_call:
             self.hook_function_after_rpc_call()
