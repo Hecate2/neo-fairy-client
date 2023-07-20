@@ -2,25 +2,15 @@ from typing import List, Union, Dict, Any, Callable
 import base64
 import json
 import os
+import random
 import traceback
 import requests
 import urllib3
 
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
-from neo_fairy_client.utils import Interpreter, to_list
+from neo_fairy_client.utils import Interpreter, to_list, NeoAddress, GasAddress
 from neo3.core.types import UInt160, UInt256
-from neo3.contracts import (PolicyContract, NeoToken, GasToken, OracleContract, DesignationContract, ManagementContract, LedgerContract, CryptoContract, StdLibContract)
 from neo3vm import VMState
-
-PolicyAddress = Hash160Str.from_UInt160(PolicyContract().hash)
-NeoAddress = Hash160Str.from_UInt160(NeoToken().hash)
-GasAddress = Hash160Str.from_UInt160(GasToken().hash)
-OracleAddress = Hash160Str.from_UInt160(OracleContract().hash)
-DesignationAddress = Hash160Str.from_UInt160(DesignationContract().hash)
-ManagementAddress = Hash160Str.from_UInt160(ManagementContract().hash)
-LedgerAddress = Hash160Str.from_UInt160(LedgerContract().hash)
-CryptoLibAddress = Hash160Str.from_UInt160(CryptoContract().hash)
-StdLibAddress = Hash160Str.from_UInt160(StdLibContract().hash)
 
 RequestExceptions = (
     requests.RequestException,
@@ -370,7 +360,7 @@ class FairyClient:
             return self.parse_single_item(result)
     
     @classmethod
-    def parse_params(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes, bytearray]) -> Dict[str, str]:
+    def parse_param(cls, param: Union[str, int, dict, Hash160Str, UInt160, UInt256, bytes, bytearray]) -> Dict[str, str]:
         type_param = type(param)
         if type_param is UInt160:
             return {
@@ -427,12 +417,12 @@ class FairyClient:
         elif type_param is list:
             return {
                 'type': 'Array',
-                'value': [cls.parse_params(param_) for param_ in param]
+                'value': [cls.parse_param(param_) for param_ in param]
             }
         elif type_param is dict:
             return {
                 'type': 'Map',
-                'value': [{'key': cls.parse_params(k), 'value': cls.parse_params(v)} for k, v in param.items()]
+                'value': [{'key': cls.parse_param(k), 'value': cls.parse_param(v)} for k, v in param.items()]
             }
         elif param is None:
             return {
@@ -441,7 +431,7 @@ class FairyClient:
         raise ValueError(f'Unable to handle param {param} with type {type_param}')
     
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
-                                       params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
+                                       params: List[Union[List, str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> Any:
         fairy_session = fairy_session or self.fairy_session
@@ -456,7 +446,7 @@ class FairyClient:
         parameters = [
             str(scripthash),
             operation,
-            list(map(lambda param: self.parse_params(param), params)),
+            list(map(lambda param: self.parse_param(param), params)),
             list(map(lambda signer: signer.to_dict(), signers)),
         ]
         if fairy_session:
@@ -468,7 +458,7 @@ class FairyClient:
                                           do_not_raise_on_result=do_not_raise_on_result)
         return result
     
-    def invokefunction(self, operation: str, params: List[Union[str, int, Hash160Str, UInt160, bytes, bytearray]] = None,
+    def invokefunction(self, operation: str, params: List[Union[List, str, int, Hash160Str, UInt160, bytes, bytearray]] = None,
                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False, with_print=True,
                        fairy_session: str = None) -> Any:
         if self.contract_scripthash is None or self.contract_scripthash == Hash160Str.zero():
@@ -494,7 +484,7 @@ class FairyClient:
             [
                 str(call[0]) if type(call[0]) is Hash160Str else str(self.contract_scripthash),
                 call[1] if type(call[0]) is Hash160Str else call[0],
-                list(map(lambda param: self.parse_params(param), call[-1]) if len(call) >= 2 else [])
+                list(map(lambda param: self.parse_param(param), call[-1]) if len(call) >= 2 else [])
             ]
             for call in call_arguments
         ]
@@ -502,24 +492,27 @@ class FairyClient:
             'invokemanywithsession', [fairy_session, relay or (relay is None and self.function_default_relay), parsed_call_arguments, list(map(lambda signer: signer.to_dict(), signers))], relay=False,
             do_not_raise_on_result=do_not_raise_on_result)
 
-    def invokescript(self, script: Union[str, bytes], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
+    def invokescript(self, script_base64_encoded: Union[str, bytes], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                      fairy_session: str = None) -> Any:
-        if type(script) is bytes:
-            script: str = script.decode()
+        if type(script_base64_encoded) is bytes:
+            script_base64_encoded: str = script_base64_encoded.decode()
         signers = to_list(signers or self.signers)
         fairy_session = fairy_session or self.fairy_session
         if fairy_session:
             relay = relay or (relay is None and self.script_default_relay)
             result = self.meta_rpc_method(
                 'invokescriptwithsession',
-                [fairy_session, relay, script, list(map(lambda signer: signer.to_dict(), signers))],
+                [fairy_session, relay, script_base64_encoded, list(map(lambda signer: signer.to_dict(), signers))],
                 relay=False)
         else:
             result = self.meta_rpc_method(
                 'invokescript',
-                [script, list(map(lambda signer: signer.to_dict(), signers))],
+                [script_base64_encoded, list(map(lambda signer: signer.to_dict(), signers))],
                 relay=relay)
         return result
+    
+    def get_block_count(self) -> int:
+        return self.meta_rpc_method("getblockcount", [])
     
     def sendfrom(self, asset_id: Hash160Str, from_address: str, to_address: str, value: int,
                  signers: List[Signer] = None):
@@ -603,6 +596,34 @@ class FairyClient:
         if not open_wallet_result:
             raise ValueError(f'Failed to open WIF wallet {wif} with given password.')
         return open_wallet_result
+
+    def force_sign_transaction(self, fairy_session: str = None, script_base64_encoded: Union[str, bytes, None] = None,
+                               signers: List[Signer] = None, system_fee: int = 1000_0000, network_fee: int = 0,
+                               valid_until_block: Union[int, None] = 0, nonce: int = 0) -> Dict[str, Any]:
+        """
+        Build and sign a transaction with the fairy wallet of the fairy_session,
+        even if the transaction cannot be run correctly
+        :param fairy_session:
+        :param script_base64_encoded:
+        :param signers:
+        :param system_fee:
+        :param network_fee:
+        :param valid_until_block:
+        :param nonce: WARNING: never publish multiple signatures using the same nonce! This will leak your private key!
+        :return:
+        """
+        fairy_session = fairy_session or self.fairy_session
+        if type(script_base64_encoded) is bytes:
+            script_base64_encoded: str = script_base64_encoded.decode()
+        script_base64_encoded: str = script_base64_encoded or self.previous_raw_result['result']['script']
+        signers = to_list(signers or self.signers)
+        valid_until_block = self.get_block_count() + 5760 if valid_until_block is None else valid_until_block
+        nonce = nonce or random.randint(0, 2**32 - 1)
+        result = self.meta_rpc_method("forcesigntransaction", [fairy_session, script_base64_encoded, list(map(lambda signer: signer.to_dict(), signers)), system_fee, network_fee, valid_until_block, nonce], relay=False)
+        if 'txHash' in result:
+            result['txHash'] = Hash256Str(result['txHash'])
+            self.previous_raw_result = result
+        return result['tx']
 
     def get_time_milliseconds(self) -> int:
         """
@@ -892,7 +913,7 @@ class FairyClient:
         parameters = [
             str(scripthash),
             operation,
-            list(map(lambda param: self.parse_params(param), params)),
+            list(map(lambda param: self.parse_param(param), params)),
             list(map(lambda signer: signer.to_dict(), signers)),
         ]
         raw_result = self.meta_rpc_method_with_raw_result(
