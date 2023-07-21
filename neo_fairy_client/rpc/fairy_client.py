@@ -50,11 +50,11 @@ class RpcBreakpoint:
     
     def __repr__(self):
         if self.state == VMState.HALT:
-            return f'''RpcBreakpoint {self.state} {self.result_stack}'''
+            return f'''{self.state} {self.result_stack}'''
         if self.source_filename and self.source_line_num:
-            return f'''RpcBreakpoint {self.state} {self.source_filename} line {self.source_line_num} instructionPointer {self.instruction_pointer}: {self.source_content}'''
+            return f'''{self.state} {self.break_reason} {self.source_filename} line {self.source_line_num} instructionPointer {self.instruction_pointer}: {self.source_content}'''
         else:
-            return f'''RpcBreakpoint {self.state} {self.contract_name} instructionPointer {self.instruction_pointer};'''
+            return f'''{self.state} {self.break_reason} {self.contract_name} instructionPointer {self.instruction_pointer};'''
 
 
 class FairyClient:
