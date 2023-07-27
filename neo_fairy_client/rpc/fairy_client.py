@@ -597,11 +597,11 @@ class FairyClient:
             raise ValueError(f'Failed to open WIF wallet {wif} with given password.')
         return open_wallet_result
 
-    def force_sign_message(self, message_base64_encoded: Union[str, bytes], fairy_session: str = None) -> Dict[str, Any]:
+    def force_sign_message(self, message_base64_encoded: Union[str, bytes], fairy_session: str = None) -> bytes:
         fairy_session = fairy_session or self.fairy_session
         if type(message_base64_encoded) is bytes:
             message_base64_encoded: str = base64.b64encode(message_base64_encoded).decode()
-        return self.meta_rpc_method("forcesignmessage", [fairy_session, message_base64_encoded], relay=False)
+        return base64.b64decode(self.meta_rpc_method("forcesignmessage", [fairy_session, message_base64_encoded], relay=False)['signed'])
 
     def force_sign_transaction(self, script_base64_encoded: Union[str, bytes, None] = None, fairy_session: str = None,
                                signers: List[Signer] = None, system_fee: int = 1000_0000, network_fee: int = 0,
