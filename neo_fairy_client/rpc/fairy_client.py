@@ -600,7 +600,7 @@ class FairyClient:
     def force_sign_message(self, message_base64_encoded: Union[str, bytes], fairy_session: str = None) -> Dict[str, Any]:
         fairy_session = fairy_session or self.fairy_session
         if type(message_base64_encoded) is bytes:
-            message_base64_encoded: str = message_base64_encoded.decode()
+            message_base64_encoded: str = base64.b64encode(message_base64_encoded).decode()
         return self.meta_rpc_method("forcesignmessage", [fairy_session, message_base64_encoded], relay=False)
 
     def force_sign_transaction(self, script_base64_encoded: Union[str, bytes, None] = None, fairy_session: str = None,
