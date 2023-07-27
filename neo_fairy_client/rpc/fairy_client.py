@@ -597,20 +597,20 @@ class FairyClient:
             raise ValueError(f'Failed to open WIF wallet {wif} with given password.')
         return open_wallet_result
 
-    def force_sign_message(self, fairy_session: str = None, message_base64_encoded: Union[str, bytes, None] = None) -> Dict[str, Any]:
+    def force_sign_message(self, message_base64_encoded: Union[str, bytes], fairy_session: str = None) -> Dict[str, Any]:
         fairy_session = fairy_session or self.fairy_session
         if type(message_base64_encoded) is bytes:
             message_base64_encoded: str = message_base64_encoded.decode()
         return self.meta_rpc_method("forcesignmessage", [fairy_session, message_base64_encoded], relay=False)
 
-    def force_sign_transaction(self, fairy_session: str = None, script_base64_encoded: Union[str, bytes, None] = None,
+    def force_sign_transaction(self, script_base64_encoded: Union[str, bytes, None] = None, fairy_session: str = None,
                                signers: List[Signer] = None, system_fee: int = 1000_0000, network_fee: int = 0,
                                valid_until_block: Union[int, None] = 0, nonce: int = 0) -> Dict[str, Any]:
         """
         Build and sign a transaction with the fairy wallet of the fairy_session,
         even if the transaction cannot be run correctly
-        :param fairy_session:
         :param script_base64_encoded:
+        :param fairy_session:
         :param signers:
         :param system_fee:
         :param network_fee:
