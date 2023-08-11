@@ -8,9 +8,11 @@ import requests
 import urllib3
 
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
-from neo_fairy_client.utils import Interpreter, to_list, NeoAddress, GasAddress
-from neo3.core.types import UInt160, UInt256
-from neo3vm import VMState
+from neo_fairy_client.utils import Interpreter, to_list
+from neo_fairy_client.utils import ContractManagementAddress, CryptoLibAddress, GasAddress, LedgerAddress, NeoAddress, OracleAddress, PolicyAddress, RoleManagementAddress, StdLibAddress
+
+from neo_fairy_client.utils import UInt160, UInt256
+from neo_fairy_client.utils import VMState
 
 RequestExceptions = (
     requests.RequestException,

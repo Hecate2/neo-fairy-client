@@ -1,17 +1,12 @@
 from typing import List
 from math import log
 import base64
-from neo_fairy_client.utils.types import Hash160Str, UInt160
 
 
 class Interpreter:
     @staticmethod
     def bytes_to_int(bytes_: bytes):
         return int.from_bytes(bytes_, byteorder='little', signed=False)
-    
-    @staticmethod
-    def bytes_to_Hash160str(bytestring: bytes):
-        return Hash160Str.from_UInt160(UInt160.deserialize_from_bytes(bytestring))
     
     @staticmethod
     def int_to_bytes(int_: int, bytes_needed: int = None):

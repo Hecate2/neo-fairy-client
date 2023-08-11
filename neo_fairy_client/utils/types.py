@@ -1,11 +1,77 @@
 from typing import List, Union
+import base58
 from enum import Enum
+import time
 from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds, gen_timestamp_and_date_str_in_days
 from neo_fairy_client.utils.misc import to_list
+from neo_fairy_client.utils.interpreters import Interpreter
 
-import time
-from neo3.core.types import UInt160, UInt256
-from neo3.wallet import Account
+
+class VMState(Enum):
+    BREAK = 'BREAK'
+    FAULT = 'FAULT'
+    HALT = 'HALT'
+    NONE = 'NONE'
+
+
+class UInt(bytes):
+    bits_needed: int = None
+    def __init__(self, b: Union[bytes, bytearray, int], bytes_needed: int = None):
+        if type(b) is int:
+            if b < 0:
+                raise ValueError(f'Expected UInt >= 0; got {b}')
+            b = Interpreter.int_to_bytes(b, bytes_needed or self.bits_needed)
+        super().__init__()
+        self._data: bytes = bytes(b)  # little-endian
+
+
+class UInt256(UInt):
+    bits_needed = 256
+    def __init__(self, b: Union[bytes, bytearray, int]):
+        super().__init__(b, self.bits_needed // 8)
+    
+    @classmethod
+    def zero(cls):
+        return cls(b'\x00' * (cls.bits_needed // 8))
+    
+    @classmethod
+    def from_string(cls, s: str):
+        """
+        0xb9b01f92c7343889ec4843479ccb60fc1a035a9ebc9d0df2ed9ce3e2d428858702
+        02878528d4e2e39cedf20d9dbc9e5a031afc60cb9c474348ec893834c7921fb0b9
+        """
+        if len(s) == cls.bits_needed // 8 + 2 and s.startswith('0x'):  # big-endian
+            return cls(bytes.fromhex(s[2:]))
+        if len(s) == cls.bits_needed // 8:
+            s = bytearray.fromhex(s)
+            s.reverse()
+            return cls(s)
+        raise ValueError(f"Wrong length or format {s}")
+
+
+class UInt160(UInt):
+    bits_needed = 160
+    
+    def __init__(self, b: Union[bytes, bytearray, int]):
+        super().__init__(b, self.bits_needed // 8)
+    
+    @classmethod
+    def zero(cls):
+        return cls(b'\x00' * (cls.bits_needed // 8))
+    
+    @classmethod
+    def from_string(cls, s: str):
+        """
+        0xb1983fa2479a0c8e2beae032d2df564b5451b7a5
+        a5b751544b56dfd232e0ea2b8e0c9a47a23f98b1
+        """
+        if len(s) == cls.bits_needed // 8 + 2 and s.startswith('0x'):  # big-endian
+            return cls(bytes.fromhex(s[2:]))
+        if len(s) == cls.bits_needed // 8:
+            s = bytearray.fromhex(s)
+            s.reverse()
+            return cls(s)
+        raise ValueError(f"Wrong length or format {s}")
 
 
 class HashStr(str):
@@ -38,6 +104,16 @@ class HashStr(str):
         return hash(self.string)
 
 
+class Account:
+    @staticmethod
+    def address_to_script_hash(s: str) -> UInt160:
+        return UInt160(base58.b58decode_check(s)[1:])
+    
+    @staticmethod
+    def script_hash_to_address(sc: UInt160) -> str:
+        return base58.b58encode_check(b'5'+sc._data)
+
+
 class Hash256Str(HashStr):
     """
     0x59916d8c2fc5feb06b77aec289ac34b49ae3bccb1f88fe64ea5172c79fc1af05
@@ -56,9 +132,9 @@ class Hash256Str(HashStr):
 
     @classmethod
     def from_UInt256(cls, u: UInt256):
-        u_bytearray = bytearray(u._data)
-        u_bytearray.reverse()
-        hash256str = u_bytearray.hex()
+        u = bytearray(u._data)
+        u.reverse()
+        hash256str = u.hex()
         return cls(hash256str)
 
     @classmethod
@@ -66,7 +142,7 @@ class Hash256Str(HashStr):
         return cls(UInt256.zero())
 
     def to_UInt256(self):
-        return UInt256.from_string(self.string[2:])
+        return UInt256.from_string(self.string)
 
 
 class Hash160Str(HashStr):
@@ -101,7 +177,7 @@ class Hash160Str(HashStr):
         return cls(UInt160.zero())
 
     def to_UInt160(self):
-        return UInt160.from_string(self.string[2:])
+        return UInt160.from_string(self.string)
     
     def to_address(self):
         return Account.script_hash_to_address(self.to_UInt160())

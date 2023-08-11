@@ -1,8 +1,7 @@
 import json
 from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
-from neo_fairy_client.utils.timers import gen_timestamp_and_date_str_in_seconds
-from neo3vm import VMState
+from neo_fairy_client import VMState
 
 target_url = 'http://127.0.0.1:16868'
 wallet_address = 'Nb2CHYY5wTh2ac58mTue5S3wpG6bQv5hSY'

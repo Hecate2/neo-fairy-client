@@ -7,11 +7,11 @@ client = FairyClient(fairy_session='Hello world! Your first contact with Fairy!'
                      wallet_address_or_scripthash=wallet_address,
                      auto_preparation=True)
 
-from neo_fairy_client.utils import neo
+from neo_fairy_client.utils import NeoAddress
 client.set_neo_balance(1_000_000_000)
-print(f"Your NEO balance: {client.invokefunction_of_any_contract(neo.hash, 'balanceOf', [wallet_scripthash])}")
-client.invokefunction_of_any_contract(neo.hash, 'transfer', [wallet_scripthash, Hash160Str.zero(), 1_000_000_000, None])
-print(f"NEO balance of zero address: {client.invokefunction_of_any_contract(neo.hash, 'balanceOf', [Hash160Str.zero()])}")
+print(f"Your NEO balance: {client.invokefunction_of_any_contract(NeoAddress, 'balanceOf', [wallet_scripthash])}")
+client.invokefunction_of_any_contract(NeoAddress, 'transfer', [wallet_scripthash, Hash160Str.zero(), 1_000_000_000, None])
+print(f"NEO balance of zero address: {client.invokefunction_of_any_contract(NeoAddress, 'balanceOf', [Hash160Str.zero()])}")
 
 nef_file, manifest = client.get_nef_and_manifest_from_path('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef')
 test_nopht_d_hash = client.virutal_deploy_from_path('../NFTLoan/NophtD/bin/sc/TestNophtD.nef')

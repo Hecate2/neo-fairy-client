@@ -3,7 +3,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
     name="neo-fairy-client",
-    version="3.5.0.10",
+    version="3.5.0.11",
     author="Hecate2",
     author_email="hecate2@qq.com",
     description="Test & debug your Neo3 smart contracts",
@@ -17,8 +17,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'requests>=2.27.1',
-        'neo_mamba==0.9',
+        'requests>=2.31.0',
     ],
     python_requires='>=3.8',
 )
