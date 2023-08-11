@@ -40,9 +40,9 @@ class UInt256(UInt):
         0xb9b01f92c7343889ec4843479ccb60fc1a035a9ebc9d0df2ed9ce3e2d428858702
         02878528d4e2e39cedf20d9dbc9e5a031afc60cb9c474348ec893834c7921fb0b9
         """
-        if len(s) == cls.bits_needed // 8 + 2 and s.startswith('0x'):  # big-endian
+        if len(s) == cls.bits_needed // 4 + 2 and s.startswith('0x'):  # big-endian
             return cls(bytes.fromhex(s[2:]))
-        if len(s) == cls.bits_needed // 8:
+        if len(s) == cls.bits_needed // 4:
             s = bytearray.fromhex(s)
             s.reverse()
             return cls(s)
@@ -65,9 +65,9 @@ class UInt160(UInt):
         0xb1983fa2479a0c8e2beae032d2df564b5451b7a5
         a5b751544b56dfd232e0ea2b8e0c9a47a23f98b1
         """
-        if len(s) == cls.bits_needed // 8 + 2 and s.startswith('0x'):  # big-endian
+        if len(s) == cls.bits_needed // 4 + 2 and s.startswith('0x'):  # big-endian
             return cls(bytes.fromhex(s[2:]))
-        if len(s) == cls.bits_needed // 8:
+        if len(s) == cls.bits_needed // 4:
             s = bytearray.fromhex(s)
             s.reverse()
             return cls(s)
