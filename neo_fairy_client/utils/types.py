@@ -14,64 +14,47 @@ class VMState(Enum):
     NONE = 'NONE'
 
 
-class UInt(bytes):
-    bits_needed: int = None
+class UInt(bytes):  # saved as small-endian
+    bytes_needed: int = None
     def __init__(self, b: Union[bytes, bytearray, int], bytes_needed: int = None):
         if type(b) is int:
             if b < 0:
                 raise ValueError(f'Expected UInt >= 0; got {b}')
-            b = Interpreter.int_to_bytes(b, bytes_needed or self.bits_needed)
+            b = Interpreter.int_to_bytes(b, bytes_needed or self.bytes_needed)
         super().__init__()
         self._data: bytes = bytes(b)  # little-endian
 
-
-class UInt256(UInt):
-    bits_needed = 256
-    def __init__(self, b: Union[bytes, bytearray, int]):
-        super().__init__(b, self.bits_needed // 8)
-    
-    @classmethod
-    def zero(cls):
-        return cls(b'\x00' * (cls.bits_needed // 8))
-    
     @classmethod
     def from_string(cls, s: str):
         """
         0xb9b01f92c7343889ec4843479ccb60fc1a035a9ebc9d0df2ed9ce3e2d428858702
         02878528d4e2e39cedf20d9dbc9e5a031afc60cb9c474348ec893834c7921fb0b9
         """
-        if len(s) == cls.bits_needed // 4 + 2 and s.startswith('0x'):  # big-endian
-            return cls(bytes.fromhex(s[2:]))
-        if len(s) == cls.bits_needed // 4:
-            s = bytearray.fromhex(s)
+        if len(s) == cls.bytes_needed * 2 + 2 and s.startswith('0x'):  # big-endian
+            s = bytearray.fromhex(s[2:])
             s.reverse()
             return cls(s)
+        if len(s) == cls.bytes_needed * 2:
+            return cls(bytes.fromhex(s[2:]))
         raise ValueError(f"Wrong length or format {s}")
+
+    @classmethod
+    def zero(cls):
+        return cls(b'\x00' * cls.bytes_needed)
+
+
+
+class UInt256(UInt):
+    bytes_needed = 256 // 8
+    def __init__(self, b: Union[bytes, bytearray, int]):
+        super().__init__(b, self.bytes_needed)
 
 
 class UInt160(UInt):
-    bits_needed = 160
+    bytes_needed = 160 // 8
     
     def __init__(self, b: Union[bytes, bytearray, int]):
-        super().__init__(b, self.bits_needed // 8)
-    
-    @classmethod
-    def zero(cls):
-        return cls(b'\x00' * (cls.bits_needed // 8))
-    
-    @classmethod
-    def from_string(cls, s: str):
-        """
-        0xb1983fa2479a0c8e2beae032d2df564b5451b7a5
-        a5b751544b56dfd232e0ea2b8e0c9a47a23f98b1
-        """
-        if len(s) == cls.bits_needed // 4 + 2 and s.startswith('0x'):  # big-endian
-            return cls(bytes.fromhex(s[2:]))
-        if len(s) == cls.bits_needed // 4:
-            s = bytearray.fromhex(s)
-            s.reverse()
-            return cls(s)
-        raise ValueError(f"Wrong length or format {s}")
+        super().__init__(b, self.bytes_needed)
 
 
 class HashStr(str):
@@ -111,7 +94,7 @@ class Account:
     
     @staticmethod
     def script_hash_to_address(sc: UInt160) -> str:
-        return base58.b58encode_check(b'5'+sc._data)
+        return base58.b58encode_check(b'5'+sc._data).decode()
 
 
 class Hash256Str(HashStr):
