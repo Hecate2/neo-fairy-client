@@ -6,6 +6,8 @@ A crude JavaScript version is available at https://github.com/Hecate2/neo-fairy-
 
 #### Tutorial for testing
 
+`pip install neo-fairy-client` or `py -m build && cd dist && pip install neo_fairy_client***.whl`. The only dependency is `requests`.
+
 **Python >= 3.8 required!** Some steps in this tutorial is to help you understand the details about how Fairy works. In actual combat, you can read the source codes of `FairyClient` and enjoy many automatic conveniences that Fairy offers. 
 
 ##### Extremely fast but close-to-base version:
