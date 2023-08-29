@@ -170,8 +170,8 @@ class FairyClient:
         }, separators=(',', ':'))
     
     @staticmethod
-    def bytes_to_UInt160(bytestring: bytes):
-        return Hash160Str.from_UInt160(UInt160.deserialize_from_bytes(bytestring))
+    def bytes_to_Hash160Str(bytestring: Union[bytes, bytearray]):
+        return Hash160Str.from_UInt160(UInt160(bytestring))
     
     @staticmethod
     def base64_struct_to_bytestrs(base64_struct: dict) -> List[bytes]:
@@ -804,6 +804,10 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         contract_scripthash = contract_scripthash or self.contract_scripthash
         return self.meta_rpc_method("putstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
+
+    def deserialize(self, data_base64encoded: Union[str, List[str]]) -> List[Any]:
+        result = self.meta_rpc_method_with_raw_result('deserialize', to_list(data_base64encoded))['result']
+        return [self.parse_single_item(item) for item in result]
 
     def set_neo_balance(self, balance: Union[int, float], fairy_session: str = None, account: Hash160Str = None):
         balance = int(balance)
