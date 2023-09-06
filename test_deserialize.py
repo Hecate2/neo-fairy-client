@@ -26,7 +26,7 @@ neo_storage: List[Tuple[Hash160Str, str]] = [
     (FairyClient.bytes_to_Hash160Str(base64.b64decode(k)[1:]), v)
     for k, v in neo_storage.items()
 ]
-data = [(balance, since_block, PublicKeyStr(vote_to.hex()) if vote_to else None) for balance, since_block, vote_to in client.deserialize([v for _, v in neo_storage])]
+data = [(balance, since_block, PublicKeyStr(vote_to.hex()) if vote_to else None) for balance, since_block, vote_to, last_GAS_per_vote in client.deserialize([v for _, v in neo_storage])]
 neo_storage: List[Tuple[Hash160Str, int, int, Union[None, PublicKeyStr]]] = [
     (k, balance, since_block, vote_to) for (k, v), (balance, since_block, vote_to) in zip(neo_storage, data)
 ]
