@@ -840,6 +840,12 @@ class FairyClient:
         account = account or self.wallet_scripthash
         return self.meta_rpc_method("setnep17balance", [fairy_session, contract, account, balance, byte_prefix])
 
+    def get_many_unclaimed_gas(self, accounts: Union[Hash160Str, List[Hash160Str]], fairy_session: str = None):
+        accounts = to_list(accounts)
+        fairy_session = fairy_session or self.fairy_session
+        result = self.meta_rpc_method('getmanyunclaimedgas', [fairy_session, *accounts])
+        return {account: int(amount) for account, amount in result.items()}
+
     b"""
     Fairy debugger features!
     """
