@@ -951,7 +951,7 @@ class FairyClient:
                              exception=result['exception'], result_stack=self.parse_stack_from_raw_result(raw_result))
 
     def debug_function_with_session(self, operation: str,
-                                        params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
+                                        params: List[Union[List, str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                         signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
                                         with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         return self.debug_any_function_with_session(
