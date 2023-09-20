@@ -173,6 +173,18 @@ class PublicKeyStr(HashStr):
     def __init__(self, string: str):
         assert len(string) == 66
         super().__init__(string)
+    
+    @classmethod
+    def from_ecdsa_verifying_key(cls, vk):
+        """
+        :param vk: ecdsa.VerifyingKey
+        typically
+        private_key_bytes = base58.b58decode(WIF_private_key)[1:-5]
+        sk = ecdsa.SigningKey.from_string(private_key_bytes, curve=ecdsa.NIST256p, hashfunc=hashlib.sha256)
+        vk = sk.get_verifying_key()
+        PublicKeyStr(vk.to_string('compressed').hex())
+        """
+        return cls(vk.to_string('compressed').hex())
 
 
 class WitnessScope(Enum):
