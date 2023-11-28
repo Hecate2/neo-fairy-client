@@ -713,6 +713,16 @@ class FairyClient:
                   f'as `static readonly UInt160` in your contract')
             raise e
 
+    def get_many_blocks(self, indexes_or_hashes: List[Union[int, Hash256Str]]):
+        '''
+        
+        :param indexes_or_hashes:
+            2 uint indexes: get all blocks between the indexes
+            other cases: get all blocks defined by each item in the list
+        :return:
+        '''
+        return self.meta_rpc_method('getmanyblocks', indexes_or_hashes)
+
     def get_contract(self, scripthash: Hash160Str = None, fairy_session: str = None):
         scripthash = scripthash or self.contract_scripthash
         if not scripthash:
