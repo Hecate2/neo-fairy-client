@@ -1042,7 +1042,12 @@ class FairyClient:
         scripthash = scripthash or self.contract_scripthash
         result: Dict[str, bool] = self.meta_rpc_method_with_raw_result("getcontractopcodecoverage", [scripthash])['result']
         return {int(k): v for k, v in result.items()}
-    
+
+    def get_contract_source_code_coverage(self, scripthash: UInt160 = None) -> Dict[str, Dict[str, bool]]:
+        scripthash = scripthash or self.contract_scripthash
+        result: Dict[str, Dict[str, bool]] = self.meta_rpc_method_with_raw_result("getcontractsourcecodecoverage", [scripthash])['result']
+        return result
+
     def clear_contract_opcode_coverage(self, scripthash: UInt160 = None) -> Dict[int, bool]:
         scripthash = scripthash or self.contract_scripthash
         result: Dict[str, bool] = self.meta_rpc_method_with_raw_result("clearcontractopcodecoverage", [scripthash])['result']
