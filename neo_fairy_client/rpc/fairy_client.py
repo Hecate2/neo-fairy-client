@@ -939,9 +939,9 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
             if fairy_session:
-                print(f'{fairy_session}::debugfunction {operation}')
+                print(f'{fairy_session}::debugfunction {operation}{params}')
             else:
-                print(f'debugfunction {operation}')
+                print(f'debugfunction {operation}{params}')
     
         params = params or []
         signers = to_list(signers or self.signers)
