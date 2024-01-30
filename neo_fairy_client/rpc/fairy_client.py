@@ -744,7 +744,7 @@ class FairyClient:
         with open(nef_path_and_filename, 'rb') as f:
             nef = f.read()
         contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
-        with open(contract_path_and_filename+".manifest.json", 'r') as f:
+        with open(contract_path_and_filename+".manifest.json", 'r', encoding='utf-8') as f:
             manifest = f.read()
         return nef, manifest
 
@@ -761,7 +761,7 @@ class FairyClient:
         with open(nef_path_and_filename, 'rb') as f:
             nef = f.read()
         contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
-        with open(contract_path_and_filename+".manifest.json", 'r') as f:
+        with open(contract_path_and_filename+".manifest.json", 'r', encoding='utf-8') as f:
             manifest = f.read()
         contract_hash = self.virtual_deploy(nef, manifest, fairy_session=fairy_session)
         nefdbgnfo_path_and_filename = contract_path_and_filename + '.nefdbgnfo'
@@ -777,7 +777,7 @@ class FairyClient:
                     and fairy_session:
                 with open(nefdbgnfo_path_and_filename, 'rb') as f:
                     nefdbgnfo = f.read()
-                with open(dumpnef_path_and_filename, 'r') as f:
+                with open(dumpnef_path_and_filename, 'r', encoding='utf-8') as f:
                     dumpnef = f.read()
                 self.set_debug_info(nefdbgnfo, dumpnef, contract_hash)
         else:
