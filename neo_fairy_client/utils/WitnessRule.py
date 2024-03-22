@@ -37,6 +37,7 @@ def Or(*conditions):
 
 
 def ScriptHash(scripthash: Hash160Str):
+    """ExecutingScriptHash is scripthash"""
     return {
         "type": "ScriptHash",
         "hash": scripthash.to_str()
@@ -44,6 +45,7 @@ def ScriptHash(scripthash: Hash160Str):
 
 
 def Group(publickey: PublicKeyStr):
+    """ExecutingScriptHash contract manifest group has publickey"""
     return {
         "type": "Group",
         "group": publickey.to_str()
@@ -51,12 +53,14 @@ def Group(publickey: PublicKeyStr):
 
 
 def CalledByEntry():
+    """ExecutingScriptHash is entry, or called by entry"""
     return {
         "type": "CalledByEntry",
     }
 
 
 def CalledByContract(scripthash: Hash160Str):
+    """ExecutingScriptHash called by scripthash"""
     return {
         "type": "CalledByContract",
         "hash": scripthash.to_str()
@@ -64,6 +68,7 @@ def CalledByContract(scripthash: Hash160Str):
 
 
 def CalledByGroup(publickey: PublicKeyStr):
+    """CallingScriptHash contract manifest group has publickey"""
     return {
         "type": "CalledByGroup",
         "group": publickey.to_str()
