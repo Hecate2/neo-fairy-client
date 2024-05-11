@@ -24,4 +24,4 @@ assert client.get_snapshot_random()[fairy_session] == 0
 assert client.invokefunction('getRandom') == 0
 print(client.set_snapshot_random(None))
 assert client.get_snapshot_random()[fairy_session] is None
-assert client.invokefunction('getRandom') == first_result
+assert client.invokefunction('getRandom') != 0

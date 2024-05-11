@@ -18,7 +18,7 @@ correct_signer = [Signer(wallet_address, WitnessScope.WitnessRules,
                          )
                          )]
 client.signers = correct_signer
-print(client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]))
+print(client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, '\x01', 5, 7, True]))
 print(client.totalfee, client.previous_system_fee, client.previous_network_fee)
 wrong_signer = [Signer(wallet_address, WitnessScope.WitnessRules,
                          rules=Deny(
@@ -29,13 +29,13 @@ wrong_signer = [Signer(wallet_address, WitnessScope.WitnessRules,
                          )
                          )]
 client.signers = wrong_signer
-assert client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 32, 1, 10, 7, True], do_not_raise_on_result=True)
+assert client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 32, '\x01', 10, 7, True], do_not_raise_on_result=True)
 client.signers = correct_signer
-print(client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 32, 1, 10, 7, True]))
+print(client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 32, '\x01', 10, 7, True]))
 print(client.totalfee, client.previous_system_fee, client.previous_network_fee)
-print(client.invokefunction('setRentalPrice', [wallet_scripthash, test_nopht_d_hash, 1, 10]))
-print(client.invokefunction('setRentalPrice', [wallet_scripthash, nftloan_scripthash, 1, 3]))
-assert client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 1, 1, 5, 7, True], do_not_raise_on_result=True)
+print(client.invokefunction('setRentalPrice', [wallet_scripthash, test_nopht_d_hash, '\x01', 10]))
+print(client.invokefunction('setRentalPrice', [wallet_scripthash, nftloan_scripthash, '\x01', 3]))
+assert client.invokefunction('registerRental', [wallet_scripthash, test_nopht_d_hash, 1, '\x01', 5, 7, True], do_not_raise_on_result=True)
 print(client.invokefunction('listExternalTokenInfo', [0]))
 print(client.invokefunction('listExternalTokenInfo', [1]))
 print(client.invokefunction('getExternalTokenInfo', [1]))

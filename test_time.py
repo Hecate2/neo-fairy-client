@@ -40,14 +40,14 @@ test_nopht_d_hash = client.virtual_deploy(test_nopht_d_nef, test_nopht_d_manifes
 client.contract_scripthash = anyupdate_short_safe_hash
 
 timestamp_dict = client.get_snapshot_timestamp()
-timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session)
+timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], fairy_session=session)
 print(timestamp_dict, timestamp_returned_from_contract)
 assert timestamp_dict[session] is None
 print(client.set_snapshot_timestamp(timestamp := int(time.time() + 86400) * 1000, session))
-print(timestamp_returned_from_contract := client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session))
+print(timestamp_returned_from_contract := client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], fairy_session=session))
 print(timestamp_dict := client.get_snapshot_timestamp())
 assert timestamp_dict[session] == timestamp_returned_from_contract == timestamp
 print(client.set_snapshot_timestamp(None))
 assert client.get_snapshot_timestamp()[session] is None
-second_timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], rpc_server_session=session)
+second_timestamp_returned_from_contract = client.invokefunction('anyUpdate', params=[nef_file, manifest, 'getTime', []], fairy_session=session)
 assert abs(timestamp_returned_from_contract - second_timestamp_returned_from_contract - 86400_000) < 45_000  # may fail if a block really lags behind

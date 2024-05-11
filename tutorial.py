@@ -28,7 +28,7 @@ signer = Signer(wallet_scripthash, scopes=WitnessScope.Global)  # watch this!
 print(
     client.invokefunction('anyUpdate', params=
     [nef_file, manifest, 'registerRental',
-     [wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True]
+     [wallet_scripthash, test_nopht_d_hash, 68, '\x01', 5, 7, True]
     ],
     signers=signer)  # watch this!
 )
@@ -47,6 +47,6 @@ client.set_debug_info(nefdbgnfo, dumpnef)  # the debug info is by default regist
 
 print(breakpoint := client.debug_function_with_session(  # do not invokefunction in debugging!
     'registerRental',
-    params=[wallet_scripthash, test_nopht_d_hash, 68, 1, 5, 7, True],
+    params=[wallet_scripthash, test_nopht_d_hash, 68, '\x01', 5, 7, True],
     signers=None,  # Watch this! I wrote this on purpose
 ))
