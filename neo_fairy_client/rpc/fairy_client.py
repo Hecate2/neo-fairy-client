@@ -1,4 +1,5 @@
 from typing import List, Union, Dict, Any, Callable
+from enum import Enum
 import base64
 import json
 import os
@@ -10,6 +11,7 @@ import urllib3
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
 from neo_fairy_client.utils import Interpreter, to_list
 from neo_fairy_client.utils import ContractManagementAddress, CryptoLibAddress, GasAddress, LedgerAddress, NeoAddress, OracleAddress, PolicyAddress, RoleManagementAddress, StdLibAddress
+from neo_fairy_client.utils import NamedCurveHash
 
 from neo_fairy_client.utils import UInt160, UInt256
 from neo_fairy_client.utils import VMState
@@ -430,6 +432,8 @@ class FairyClient:
             return {
                 'type': 'Any',
             }
+        elif isinstance(param, Enum):
+            return cls.parse_param(param.value)
         raise ValueError(f'Unable to handle param {param} with type {type_param}')
     
     def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
@@ -602,11 +606,33 @@ class FairyClient:
             raise ValueError(f'Failed to open WIF wallet {wif} with given password.')
         return open_wallet_result
 
-    def force_sign_message(self, message_base64_encoded: Union[str, bytes], fairy_session: str = None) -> bytes:
+    def force_verify_with_ecdsa(
+            self, message_base64_encoded: Union[str, bytes],
+            pubkey: Union[PublicKeyStr, str, bytes],
+            signature_base64_encoded: Union[str, bytes],
+            namedCurveHash: Union[NamedCurveHash, bytes, int] = NamedCurveHash.secp256r1SHA256) -> bool:
+        if type(message_base64_encoded) is bytes:
+            message_base64_encoded: str = base64.b64encode(message_base64_encoded).decode()
+        if type(pubkey) is PublicKeyStr:
+            pubkey: bytearray = pubkey.to_bytes()
+        pubkey: str = base64.b64encode(pubkey).decode()
+        if type(signature_base64_encoded) is bytes:
+            signature_base64_encoded: str = base64.b64encode(signature_base64_encoded).decode()
+        if type(namedCurveHash) is bytes:
+            namedCurveHash: int = namedCurveHash[0]
+        if type(namedCurveHash) is int:
+            namedCurveHash: NamedCurveHash = NamedCurveHash(namedCurveHash)
+        return self.meta_rpc_method("forceverifywithecdsa", [message_base64_encoded, pubkey, signature_base64_encoded, namedCurveHash.value], relay=False)['result']
+
+    def force_sign_message(self, message_base64_encoded: Union[str, bytes], namedCurveHash: Union[NamedCurveHash, bytes, int] = NamedCurveHash.secp256r1SHA256, fairy_session: str = None) -> bytes:
         fairy_session = fairy_session or self.fairy_session
         if type(message_base64_encoded) is bytes:
             message_base64_encoded: str = base64.b64encode(message_base64_encoded).decode()
-        return base64.b64decode(self.meta_rpc_method("forcesignmessage", [fairy_session, message_base64_encoded], relay=False)['signed'])
+        if type(namedCurveHash) is bytes:
+            namedCurveHash: int = namedCurveHash[0]
+        if type(namedCurveHash) is int:
+            namedCurveHash: NamedCurveHash = NamedCurveHash(namedCurveHash)
+        return base64.b64decode(self.meta_rpc_method("forcesignmessage", [fairy_session, message_base64_encoded, namedCurveHash.value], relay=False)['signed'])
 
     def force_sign_transaction(self, script_base64_encoded: Union[str, bytes, None] = None, fairy_session: str = None,
                                signers: List[Signer] = None, system_fee: int = 1000_0000, network_fee: int = 0,

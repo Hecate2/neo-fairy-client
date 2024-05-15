@@ -185,6 +185,9 @@ class PublicKeyStr(HashStr):
         PublicKeyStr(vk.to_string('compressed').hex())
         """
         return cls(vk.to_string('compressed').hex())
+    
+    def to_bytes(self):
+        return bytearray.fromhex(self)
 
 
 class WitnessScope(Enum):
@@ -226,6 +229,11 @@ class Signer:
     def __repr__(self):
         return self.to_dict().__repr__()
 
+class NamedCurveHash(Enum):
+    secp256k1SHA256 = 22
+    secp256r1SHA256 = 23
+    secp256k1Keccak256 = 122
+    secp256r1Keccak256 = 123
 
 if __name__ == '__main__':
     print('30 days:', gen_timestamp_and_date_str_in_days(30))
