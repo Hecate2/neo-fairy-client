@@ -11,7 +11,7 @@ import urllib3
 from neo_fairy_client.utils import Hash160Str, Hash256Str, PublicKeyStr, Signer
 from neo_fairy_client.utils import Interpreter, to_list
 from neo_fairy_client.utils import ContractManagementAddress, CryptoLibAddress, GasAddress, LedgerAddress, NeoAddress, OracleAddress, PolicyAddress, RoleManagementAddress, StdLibAddress
-from neo_fairy_client.utils import NamedCurveHash
+from neo_fairy_client.utils import NamedCurveHash, defaultFairyWalletScriptHash
 
 from neo_fairy_client.utils import UInt160, UInt256
 from neo_fairy_client.utils import VMState
@@ -74,7 +74,7 @@ class FairyClient:
                  auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000,
                  auto_preparation=True,
                  hook_function_after_rpc_call: Callable = None,
-                 default_fairy_wallet_scripthash: Hash160Str = Hash160Str('0xd2cefc96ad5cb7b625a0986ef6badde0533731d5')):
+                 default_fairy_wallet_scripthash: Hash160Str = defaultFairyWalletScriptHash):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
