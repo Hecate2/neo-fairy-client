@@ -30,7 +30,7 @@ with open('../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.manifest.json', 'r') as f:
     manifest_dict['name'] = 'AnyUpdateShortSafe'
     manifest = json.dumps(manifest_dict, separators=(',', ':'))
 
-FAULT_MESSAGE = 'ASSERT is executed with false result.'
+FAULT_MESSAGE = 'ASSERTMSG is executed with false result.'
 
 fairy_session = 'NophtD'
 lender_client = FairyClient(target_url, wallet_address, fairy_session=fairy_session, signers=lender, with_print=True)
