@@ -1,4 +1,5 @@
-import json
+# This test is not guaranteed to run smoothly,
+# because the assembly instructions can differ from compilers and optimizers
 from neo_fairy_client.rpc import FairyClient
 from neo_fairy_client.utils.types import Hash160Str, Signer, WitnessScope
 from neo_fairy_client import VMState
@@ -44,9 +45,9 @@ print(rpc_breakpoint := client.debug_function_with_session('registerRental', [wa
 print(rpc_breakpoint := client.debug_step_into())
 # Went to code ByteString.cs line 31: "OpCode(OpCode.SIZE)" and back to NFTLoan.cs again
 # and hit the source code breakpoint
-assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.instruction_pointer == 3284
+assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 253 and '64' in rpc_breakpoint.source_content
 print(rpc_breakpoint := client.debug_step_over_assembly())
-assert rpc_breakpoint.break_reason == 'None' and rpc_breakpoint.instruction_pointer == 3286
+assert rpc_breakpoint.break_reason == 'None' and rpc_breakpoint.source_line_num == 253 and 'externalTokenId.Length <= 64' in rpc_breakpoint.source_content
 # print(rpc_breakpoint := client.debug_step_out())
 
 print(client.get_local_variables())
