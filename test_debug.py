@@ -26,6 +26,8 @@ print(client.contract_scripthash)
 print(client.list_filenames_of_contract())
 assert client.list_debug_info() == [client.contract_scripthash]
 
+client.delete_source_code_breakpoints()
+
 print(client.set_assembly_breakpoints(0))
 print(client.set_assembly_breakpoints(3))
 try:
@@ -42,12 +44,17 @@ print(method_info := client.get_method_by_instruction_pointer(3309))  # Executio
 assert 'RegisterRental' in method_info['id']
 
 print(rpc_breakpoint := client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, '\x01', 5, 7, True]))
-print(rpc_breakpoint := client.debug_step_into())
-# Went to code ByteString.cs line 31: "OpCode(OpCode.SIZE)" and back to NFTLoan.cs again
-# and hit the source code breakpoint
-assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 253 and '64' in rpc_breakpoint.source_content
+assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 253
 print(rpc_breakpoint := client.debug_step_over_assembly())
-assert rpc_breakpoint.break_reason == 'None' and rpc_breakpoint.source_line_num == 253 and 'externalTokenId.Length <= 64' in rpc_breakpoint.source_content
+assert rpc_breakpoint.break_reason == 'None' and rpc_breakpoint.source_filename == 'ByteString.cs' and rpc_breakpoint.source_line_num == 31
+print(rpc_breakpoint := client.debug_step_over_assembly())
+assert rpc_breakpoint.break_reason == 'None' and rpc_breakpoint.source_line_num == 253
+print(rpc_breakpoint := client.debug_step_into())  # Nothing to step into; same as step over
+assert rpc_breakpoint.break_reason == 'SourceCode' and rpc_breakpoint.source_line_num == 254
+print(rpc_breakpoint := client.debug_step_over())
+assert rpc_breakpoint.break_reason == 'SourceCode' and rpc_breakpoint.source_line_num == 257
+print(rpc_breakpoint := client.debug_step_over_source_code())
+assert rpc_breakpoint.break_reason == 'SourceCode' and rpc_breakpoint.source_line_num == 258
 # print(rpc_breakpoint := client.debug_step_out())
 
 print(client.get_local_variables())
@@ -58,11 +65,9 @@ print(client.get_instruction_pointer())
 print(client.get_variable_value_by_name("flashLoanPrice"))
 print(client.get_variable_names_and_values())
 
-print(client.debug_step_over())
-print(rpc_breakpoint := client.debug_step_over_source_code())
 assert rpc_breakpoint.state == VMState.BREAK
 print(rpc_breakpoint := client.debug_continue())
-assert rpc_breakpoint.state == VMState.FAULT  # we did not deployed NophtD here
+assert rpc_breakpoint.state == VMState.FAULT  # we did not deploy NophtD here
 assert client.previous_raw_result['result']['sourcefilename'] == 'Contract.cs'
 assert client.previous_raw_result['result']['sourcelinenum'] == 42
 assert 'Called Contract Does Not Exist' in client.previous_raw_result['result']['exception']
@@ -71,9 +76,24 @@ print(client.clear_contract_opcode_coverage())
 for k, v in client.get_contract_opcode_coverage().items():
     assert v is False
 
+# deploy NophtD
+test_nopht_d_hash = client.virutal_deploy_from_path('../NFTLoan/NophtD/bin/sc/TestNophtD.nef', auto_set_client_contract_scripthash=False)
+print(rpc_breakpoint := client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, '\x01', 5, 7, True]))
+assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 253
+client.set_source_code_breakpoints(['NFTLoan.cs', 269])
+print(rpc_breakpoint := client.debug_continue())
+assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 269
+print(rpc_breakpoint := client.debug_step_into())
+assert rpc_breakpoint.break_reason == 'Call' and rpc_breakpoint.source_line_num == 209
+print(rpc_breakpoint := client.debug_step_out())
+assert rpc_breakpoint.break_reason == 'Return' and rpc_breakpoint.source_line_num == 269
+print(rpc_breakpoint := client.debug_step_over())
+assert rpc_breakpoint.break_reason == 'SourceCode' and rpc_breakpoint.source_line_num == 270
+
 print(client.delete_assembly_breakpoints(0))
 print(client.delete_assembly_breakpoints())
 print(client.delete_source_code_breakpoints(['NFTLoan.cs', 253]))
+print(client.delete_source_code_breakpoints(['NFTLoan.cs', 269]))
 print(client.delete_source_code_breakpoints([]))
 print(client.delete_debug_info(client.contract_scripthash))
 print(client.delete_snapshots(fairy_session))
