@@ -756,9 +756,9 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("getcontract", [fairy_session, scripthash])
 
-    def list_contracts(self, fairy_session: str = None):
+    def list_contracts(self, verbose = False, fairy_session: str = None) -> Dict[str, Any]:
         fairy_session = fairy_session or self.fairy_session
-        return self.meta_rpc_method("listcontracts", [fairy_session])
+        return self.meta_rpc_method("listcontracts", [fairy_session, verbose])
 
     def await_confirmed_transaction(self, tx_hash: Hash256Str, verbose=True, wait_block_count = 2):
         return self.meta_rpc_method('awaitconfirmedtransaction', [tx_hash, verbose, wait_block_count])
