@@ -66,7 +66,8 @@ print(client.get_variable_value_by_name("flashLoanPrice"))
 print(client.get_variable_names_and_values())
 
 assert rpc_breakpoint.state == VMState.BREAK
-print(rpc_breakpoint := client.debug_continue())
+print(rpc_breakpoint := client.debug_step_into())
+assert rpc_breakpoint.break_reason == 'None' and rpc_breakpoint.state == VMState.FAULT
 assert rpc_breakpoint.state == VMState.FAULT  # we did not deploy NophtD here
 assert client.previous_raw_result['result']['sourcefilename'] == 'Contract.cs'
 assert client.previous_raw_result['result']['sourcelinenum'] == 42
@@ -80,13 +81,18 @@ for k, v in client.get_contract_opcode_coverage().items():
 test_nopht_d_hash = client.virutal_deploy_from_path('../NFTLoan/NophtD/bin/sc/TestNophtD.nef', auto_set_client_contract_scripthash=False)
 print(rpc_breakpoint := client.debug_function_with_session('registerRental', [wallet_scripthash, test_nopht_d_hash, 68, '\x01', 5, 7, True]))
 assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 253
+client.set_source_code_breakpoints(['NFTLoan.cs', 258])
 client.set_source_code_breakpoints(['NFTLoan.cs', 269])
 print(rpc_breakpoint := client.debug_continue())
-assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 269
+assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 258
 print(rpc_breakpoint := client.debug_step_into())
-assert rpc_breakpoint.break_reason == 'Call' and rpc_breakpoint.source_line_num == 209
+assert rpc_breakpoint.break_reason == 'Call' and rpc_breakpoint.source_line_num == 96
 print(rpc_breakpoint := client.debug_step_out())
-assert rpc_breakpoint.break_reason == 'Return' and rpc_breakpoint.source_line_num == 269
+assert rpc_breakpoint.break_reason == 'Return' and rpc_breakpoint.source_line_num == 258
+print(rpc_breakpoint := client.debug_step_into())
+assert rpc_breakpoint.break_reason == 'SourceCode' and rpc_breakpoint.source_line_num == 257
+print(rpc_breakpoint := client.debug_step_out())
+assert rpc_breakpoint.break_reason == 'SourceCodeBreakpoint' and rpc_breakpoint.source_line_num == 269
 print(rpc_breakpoint := client.debug_step_over())
 assert rpc_breakpoint.break_reason == 'SourceCode' and rpc_breakpoint.source_line_num == 270
 
