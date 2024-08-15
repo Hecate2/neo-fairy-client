@@ -12,7 +12,7 @@ A crude JavaScript version is available at https://github.com/Hecate2/neo-fairy-
 
 ##### Extremely fast but close-to-base version:
 
-Visit [test_nftloan.py](test_nftloan.py) as a sample of usage. The tested contract can be found at https://github.com/Hecate2/NFTLoan . Contract `AnyUpdateShortSafe` is an old-fashioned contract for testing, deployed on testnet T4, with source codes at https://github.com/Hecate2/AnyUpdate/ . You can skip using `AnyUpdate` by calling the RPC method `virtualdeploy`. 
+Visit [test_nftloan.py](test_nftloan.py) as a sample of usage. The tested contract can be found at https://github.com/Hecate2/NFTLoan . Contract `AnyUpdateShortSafe` is an old-fashioned contract for testing, deployed on testnet T4 (which has been deprecated; we now use testnet T5), with source codes at https://github.com/Hecate2/AnyUpdate/ . You can skip using `AnyUpdate` by calling the RPC method `virtualdeploy`. 
 
 ##### Step 1: Run a neo-cli with Fairy plugin!
 
@@ -20,7 +20,7 @@ Head to https://github.com/Hecate2/neo-fairy-test/ to prepare it. You do not rea
 
 ##### Step 2: Using your client, prepare your server snapshot
 
-Place a json file of neo wallet (assumed to be `testnet.json` with password `1`) beside `neo-cli.exe`, and call your Fairy server with the following Python codes:
+Place a json file of neo wallet (assumed to be `testnet.json` with password `1`) beside `neo-cli.exe`, and call your Fairy server with the following Python codes: (Complete codes available at https://github.com/Hecate2/neo-fairy-client/blob/master/tutorial.py )
 
 ```python
 from neo_fairy_client.rpc import FairyClient
@@ -31,9 +31,8 @@ wallet_scripthash = Hash160Str.from_address(wallet_address)
 wallet_path = 'testnet.json'
 wallet_password = '1'
 client = FairyClient(fairy_session='Hello world! Your first contact with Fairy!',
-            wallet_address_or_scripthash=wallet_address,
-            wallet_path=wallet_path, wallet_password=wallet_password,
-            auto_preparation=True)
+                     wallet_address_or_scripthash=wallet_address,
+                     auto_preparation=True)
 ```
 
 Here `auto_preparation=True` tries to delete the old snapshot on the Fairy server named `Hello world! Your first contact with Fairy!`, and creates a new snapshot of the same name based on the current Neo system snapshot, then opens the wallet on Fairy server and automatically sets you NEO and GAS balance both to 100 (*10^8). 
