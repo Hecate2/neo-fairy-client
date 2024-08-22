@@ -226,6 +226,15 @@ class Signer:
             'rules': self.rules
         }
     
+    @classmethod
+    def from_dict(cls, d):
+        account = Hash160Str(d['account'])
+        scopes = WitnessScope(d['scopes']) if 'scopes' in d else WitnessScope.NONE
+        allowedcontracts = [Hash160Str(c) for c in d['allowedcontracts']] if 'allowedcontracts' in d else None
+        allowedgroups = [PublicKeyStr(g) for g in d['allowedgroups']] if 'allowedgroups' in d else None
+        rules = d['rules'] if 'rules' in d else None
+        return cls(account, scopes, allowedcontracts, allowedgroups, rules)
+    
     def __repr__(self):
         return self.to_dict().__repr__()
 

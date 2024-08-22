@@ -14,7 +14,7 @@ from neo_fairy_client.utils import ContractManagementAddress, CryptoLibAddress, 
 from neo_fairy_client.utils import NamedCurveHash, defaultFairyWalletScriptHash
 
 from neo_fairy_client.utils import UInt160, UInt256
-from neo_fairy_client.utils import VMState
+from neo_fairy_client.utils import VMState, WitnessScope
 
 RequestExceptions = (
     requests.RequestException,
@@ -516,6 +516,17 @@ class FairyClient:
                 [script_base64_encoded, list(map(lambda signer: signer.to_dict(), signers))],
                 relay=relay)
         return result
+    
+    def replay_transaction(self, tx_hash: Union[str, Hash256Str], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
+                           fairy_session: str = None) -> Any:
+        """
+        Get a transaction already existing on chain, and re-execute its script
+        :param signers: if None, use signers of the specified transaction
+        """
+        tx_hash: Hash256Str = Hash256Str(tx_hash)
+        tx = self.await_confirmed_transaction(tx_hash, True)
+        signers = signers or [Signer.from_dict(s) for s in tx['signers']]
+        return self.invokescript(tx['script'], signers=signers, relay=relay, fairy_session=fairy_session)
     
     def get_block_count(self) -> int:
         return self.meta_rpc_method("getblockcount", [])
