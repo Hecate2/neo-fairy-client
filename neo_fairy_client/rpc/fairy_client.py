@@ -735,14 +735,14 @@ class FairyClient:
             result[k] = None if not v else int(v)
         return result
 
-    def virtual_deploy(self, nef: bytes, manifest: str, signers: Union[Signer, List[Signer]] = None, fairy_session: str = None) -> Hash160Str:
+    def virtual_deploy(self, nef: bytes, manifest: str, data: Any = None, signers: Union[Signer, List[Signer]] = None, fairy_session: str = None) -> Hash160Str:
         fairy_session = fairy_session or self.fairy_session
         # check manifest
         manifest_dict = json.loads(manifest)
         if manifest_dict["permissions"] == [{'contract': '0xacce6fd80d44e1796aa0c2c625e9e4e0ce39efc0', 'methods': ['deserialize', 'serialize']}, {'contract': '0xfffdc93764dbaddd97c48f252a53ea4643faa3fd', 'methods': ['destroy', 'getContract', 'update']}]:
             print('!!!SERIOUS WARNING: Did you write [ContractPermission("*", "*")] in your contract?!!!')
         try:
-            return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest, list(map(lambda signer: signer.to_dict(), to_list(signers or self.signers)))])[fairy_session])
+            return Hash160Str(self.meta_rpc_method("virtualdeploy", [fairy_session, base64.b64encode(nef).decode(), manifest, self.parse_param(data), list(map(lambda signer: signer.to_dict(), to_list(signers or self.signers)))])[fairy_session])
         except Exception as e:
             print(f'If you have weird exceptions from this method, '
                   f'check if you have written any `null` to contract storage in `_deploy` method. '

@@ -36,7 +36,7 @@ print(lender_client.delete_snapshots(lender_client.list_snapshots()))
 lender_client.new_snapshots_from_current_system()
 lender_client.set_gas_balance(100_0000_0000)
 test_nopht_d_hash = lender_client.virtual_deploy(nophtd_nef_file, nophtd_manifest)
-nftloan_scripthash = lender_client.virtual_deploy(nef_file, manifest)
+nftloan_scripthash = lender_client.virtual_deploy(nef_file, manifest, data=None)
 print(test_nopht_d_hash, nftloan_scripthash)
 assert nftloan_scripthash == lender_client.virtual_deploy(nef_file, manifest)
 lender_client.contract_scripthash = test_nopht_d_hash
