@@ -736,6 +736,11 @@ class FairyClient:
         return result
 
     def virtual_deploy(self, nef: bytes, manifest: str, data: Any = None, signers: Union[Signer, List[Signer]] = None, fairy_session: str = None) -> Hash160Str:
+        """
+        
+        :param data: Contract parameter sent to _deploy method of contract
+        :return:
+        """
         fairy_session = fairy_session or self.fairy_session
         # check manifest
         manifest_dict = json.loads(manifest)
@@ -785,12 +790,13 @@ class FairyClient:
             manifest = f.read()
         return nef, manifest
 
-    def virutal_deploy_from_path(self, nef_path_and_filename: str, fairy_session: str = None,
+    def virutal_deploy_from_path(self, nef_path_and_filename: str, data: Any = None, fairy_session: str = None,
                                  auto_dumpnef=True, dumpnef_backup=True, auto_set_debug_info=True,
                                  auto_set_client_contract_scripthash=True) -> Hash160Str:
         """
         auto virtual deploy which also executes dumpnef (on your machine) and SetDebugInfo (with RPC)
         :param nef_path_and_filename: '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan.nef'
+        :param data: Contract parameter sent to _deploy method of contract
         """
         fairy_session = fairy_session or self.fairy_session
         path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
@@ -800,7 +806,7 @@ class FairyClient:
         contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
         with open(contract_path_and_filename+".manifest.json", 'r', encoding='utf-8') as f:
             manifest = f.read()
-        contract_hash = self.virtual_deploy(nef, manifest, fairy_session=fairy_session)
+        contract_hash = self.virtual_deploy(nef, manifest, data=data, fairy_session=fairy_session)
         nefdbgnfo_path_and_filename = contract_path_and_filename + '.nefdbgnfo'
         dumpnef_path_and_filename = contract_path_and_filename + '.nef.txt'
         if os.path.exists(nefdbgnfo_path_and_filename):
