@@ -772,6 +772,25 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("getcontract", [fairy_session, scripthash])
 
+    def save_nef_manifest(self, scripthash: Hash160Str = None, nef_path_and_filename: str = None, fairy_session: str = None, auto_dumpnef=True) -> None:
+        scripthash = scripthash or self.contract_scripthash
+        contract_state = self.get_contract(scripthash, fairy_session=fairy_session)
+        manifest = contract_state['manifest']
+        nef_path_and_filename = nef_path_and_filename or f"{scripthash}.{manifest['name']}.nef"
+        path, nef_filename = os.path.split(nef_path_and_filename)
+        if nef_filename.endswith(".nef"):
+            nef_filename = nef_filename[:-len(".nef")]
+        if nef_filename.endswith(".manifest.json"):
+            nef_filename = nef_filename[:-len(".manifest.json")]
+        with open(os.path.join(path, f'{nef_filename}.manifest.json'), 'w') as f:
+            f.write(json.dumps(manifest))
+        nef_file = contract_state['nefFile']
+        nef_path_and_filename = os.path.join(path, f'{nef_filename}.nef')
+        with open(nef_path_and_filename, 'wb') as f:
+            f.write(base64.b64decode(nef_file))
+        if auto_dumpnef:
+            print(f'dumpnef {nef_filename}', os.popen(f'dumpnef {nef_path_and_filename} > {nef_path_and_filename}.txt').read())
+
     def list_contracts(self, verbose = False, fairy_session: str = None) -> Dict[str, Any]:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("listcontracts", [fairy_session, verbose])
@@ -800,7 +819,7 @@ class FairyClient:
         """
         fairy_session = fairy_session or self.fairy_session
         path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
-        assert nef_filename.endswith('.nef')
+        assert nef_filename.endswith('.nef'), f"File name must end with .nef . Got {nef_filename}"
         with open(nef_path_and_filename, 'rb') as f:
             nef = f.read()
         contract_path_and_filename = nef_path_and_filename[:-4]  # '../NFTLoan/NFTLoan/bin/sc/NFTFlashLoan'
