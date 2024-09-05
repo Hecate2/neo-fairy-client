@@ -854,7 +854,10 @@ class FairyClient:
     @staticmethod
     def all_to_base64(key: Union[str, bytes, int]) -> str:
         if type(key) is str:
-            key = key.encode()
+            encoded_key = key.encode(encoding='UTF-8',errors='strict')
+            if not key.isascii():
+                print(f'WARNING! non-ascii str input {key}. Your input will be utf8-encoded to bytes {encoded_key}')
+            key = encoded_key
         if type(key) is int:
             key = Interpreter.int_to_bytes(key)
         if type(key) is bytes:
