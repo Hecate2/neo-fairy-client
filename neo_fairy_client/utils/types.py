@@ -25,11 +25,13 @@ class UInt(bytes):  # saved as small-endian
         self._data: bytes = bytes(b)  # little-endian
 
     @classmethod
-    def from_string(cls, s: str):
+    def from_str_or_int(cls, s: Union[str, int]):
         """
         0xb9b01f92c7343889ec4843479ccb60fc1a035a9ebc9d0df2ed9ce3e2d428858702
         02878528d4e2e39cedf20d9dbc9e5a031afc60cb9c474348ec893834c7921fb0b9
         """
+        if type(s) is int:
+            return cls.from_str_or_int(hex(s))
         if len(s) == cls.bytes_needed * 2 + 2 and s.startswith('0x'):  # big-endian
             s = bytearray.fromhex(s[2:])
             s.reverse()
@@ -65,7 +67,9 @@ class HashStr(str):
         self.string = string
     
     @classmethod
-    def from_str(cls, s: Union[str, None]):
+    def from_str_or_int(cls, s: Union[str, int, None]):
+        if type(s) is int:
+            return cls(hex(s))
         if not s:
             return None
         return cls(s)
@@ -120,10 +124,12 @@ class Hash256Str(HashStr):
         super().__init__(string)
     
     @classmethod
-    def from_str(cls, s: Union[str, None]):
+    def from_str_or_int(cls, s: Union[str, int, None]):
         if type(s) is cls:
             s: Hash256Str
             return s
+        if type(s) is int:
+            return cls(hex(s))
         if not s:
             return None
         return cls(s)
@@ -162,10 +168,12 @@ class Hash160Str(HashStr):
         super().__init__(string)
     
     @classmethod
-    def from_str(cls, s: Union[str, None]):
+    def from_str_or_int(cls, s: Union[str, int, None]):
         if type(s) is cls:
             s: Hash160Str
             return s
+        if type(s) is int:
+            return cls(hex(s))
         if not s:
             return None
         if s.startswith('N'):
