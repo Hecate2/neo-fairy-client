@@ -519,7 +519,7 @@ class FairyClient:
         return result
     
     def replay_transaction(self, tx_hash: Union[str, int, Hash256Str], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
-                           fairy_session: str = None) -> Any:
+                           fairy_session: str = None, debug = False) -> Any:
         """
         Get a transaction already existing on chain, and re-execute its script
         :param signers: if None, use signers of the specified transaction
@@ -527,7 +527,9 @@ class FairyClient:
         tx_hash: Hash256Str = Hash256Str.from_str_or_int(tx_hash)
         tx = self.await_confirmed_transaction(tx_hash, True)
         signers = signers or [Signer.from_dict(s) for s in tx['signers']]
-        return self.invokescript(tx['script'], signers=signers, relay=relay, fairy_session=fairy_session)
+        if not debug:
+            return self.invokescript(tx['script'], signers=signers, relay=relay, fairy_session=fairy_session)
+        return self.debug_script_with_session(tx['script'], signers=signers, relay=relay, fairy_session=fairy_session)
     
     def get_block_count(self) -> int:
         return self.meta_rpc_method("getblockcount", [])
@@ -999,7 +1001,7 @@ class FairyClient:
 
     def debug_any_function_with_session(self, scripthash: Union[str, int, Hash160Str], operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
-                                       signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
+                                       signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                                        with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         scripthash = Hash160Str.from_str_or_int(scripthash) or self.contract_scripthash
         fairy_session = fairy_session or self.fairy_session
@@ -1028,12 +1030,33 @@ class FairyClient:
 
     def debug_function_with_session(self, operation: str,
                                         params: List[Union[List, str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
-                                        signers: List[Signer] = None, relay: bool = None, do_not_raise_on_result=False,
+                                        signers: List[Signer] = None, relay: bool = None,
                                         with_print=True, fairy_session: str = None) -> RpcBreakpoint:
         return self.debug_any_function_with_session(
             self.contract_scripthash, operation,
-            params=params, signers=signers, relay=relay, do_not_raise_on_result=do_not_raise_on_result,
+            params=params, signers=signers, relay=relay,
             with_print=with_print, fairy_session=fairy_session)
+    
+    def debug_script_with_session(self, script_base64_encoded: Union[str, bytes],
+                                  signers: Union[Signer, List[Signer]] = None, relay: bool = None,
+                                  with_print = True, fairy_session: str = None) -> RpcBreakpoint:
+        fairy_session = fairy_session or self.fairy_session
+        if type(script_base64_encoded) is bytes:
+            script_base64_encoded: str = script_base64_encoded.decode()
+        if self.with_print and with_print:
+            if fairy_session:
+                print(f'{fairy_session}::debugscript {script_base64_encoded}')
+            else:
+                print(f'debugfunction {script_base64_encoded}')
+        raw_result = self.meta_rpc_method_with_raw_result(
+            'debugscriptwithsession',
+            [fairy_session, relay or (relay is None and self.function_default_relay),
+             script_base64_encoded, list(map(lambda signer: signer.to_dict(), signers))])
+        result = raw_result['result']
+        return RpcBreakpoint(result['state'], result['breakreason'],
+                             result['scripthash'], result['contractname'], result['instructionpointer'],
+                             result['sourcefilename'], result['sourcelinenum'], result['sourcecontent'],
+                             exception=result['exception'], result_stack=self.parse_stack_from_raw_result(raw_result))
 
     def debug_continue(self, fairy_session: str = None) -> RpcBreakpoint:
         fairy_session = fairy_session or self.fairy_session
