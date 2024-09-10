@@ -64,6 +64,12 @@ class HashStr(str):
         # assert string.startswith('0x')
         self.string = string
     
+    @classmethod
+    def from_str(cls, s: Union[str, None]):
+        if not s:
+            return None
+        return cls(s)
+    
     def to_str(self):
         return self.string
     
@@ -112,7 +118,16 @@ class Hash256Str(HashStr):
             string = '0x' + string
         assert len(string) == 66
         super().__init__(string)
-
+    
+    @classmethod
+    def from_str(cls, s: Union[str, None]):
+        if type(s) is cls:
+            s: Hash256Str
+            return s
+        if not s:
+            return None
+        return cls(s)
+    
     @classmethod
     def from_UInt256(cls, u: UInt256):
         u = bytearray(u._data)
@@ -141,8 +156,21 @@ class Hash160Str(HashStr):
             string = string.hex()
         if len(string) == 40:
             string = '0x' + string
+        if string.startswith('N'):
+            string = Hash160Str.from_address(string)
         assert len(string) == 42
         super().__init__(string)
+    
+    @classmethod
+    def from_str(cls, s: Union[str, None]):
+        if type(s) is cls:
+            s: Hash160Str
+            return s
+        if not s:
+            return None
+        if s.startswith('N'):
+            return cls.from_address(s)
+        return cls(s)
     
     @classmethod
     def from_UInt160(cls, u: UInt160):

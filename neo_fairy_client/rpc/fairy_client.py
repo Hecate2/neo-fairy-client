@@ -35,8 +35,7 @@ class RpcBreakpoint:
         else:
             self.state: VMState = {'BREAK': VMState.BREAK, 'FAULT': VMState.FAULT, 'HALT': VMState.HALT, 'NONE': VMState.NONE}[state.upper()]
         self.break_reason = break_reason
-        if type(scripthash) is str:
-            scripthash = Hash160Str(scripthash)
+        scripthash = Hash160Str.from_str(scripthash)
         self.scripthash = scripthash
         self.contract_name = contract_name
         self.instruction_pointer = instruction_pointer
@@ -64,7 +63,7 @@ class RpcBreakpoint:
 class FairyClient:
     def __init__(self, target_url: str = 'http://localhost:16868',
                  wallet_address_or_scripthash: Union[str, Hash160Str] = None,
-                 contract_scripthash: Hash160Str = None, signers: Union[Signer, List[Signer], None] = None,
+                 contract_scripthash: Union[str, Hash160Str] = None, signers: Union[Signer, List[Signer], None] = None,
                  fairy_session: str = None, function_default_relay=True, script_default_relay=False,
                  confirm_relay_to_blockchain=False,
                  auto_reset_fairy_session=True,
@@ -74,7 +73,7 @@ class FairyClient:
                  auto_set_neo_balance=100_0000_0000, auto_set_gas_balance=100_0000_0000,
                  auto_preparation=True,
                  hook_function_after_rpc_call: Callable = None,
-                 default_fairy_wallet_scripthash: Hash160Str = defaultFairyWalletScriptHash):
+                 default_fairy_wallet_scripthash: Union[str, Hash160Str] = defaultFairyWalletScriptHash):
         """
         Fairy RPC client to interact with both normal Neo3 and Fairy RPC backend.
         Fairy RPC backend helps you test and debug transactions with sessions, which contain snapshots.
@@ -99,15 +98,15 @@ class FairyClient:
         :param hook_function_after_rpc_call: a function with no input argument, executed after each successful RPC call
         """
         self.target_url: str = target_url
-        self.contract_scripthash: Union[Hash160Str, None] = contract_scripthash
+        self.contract_scripthash: Union[Hash160Str, None] = Hash160Str.from_str(contract_scripthash)
         self.requests_session: requests.Session = requests_session
         if wallet_address_or_scripthash:
             if wallet_address_or_scripthash.startswith('N'):
                 self.wallet_address: Union[str, None] = wallet_address_or_scripthash
                 self.wallet_scripthash: Union[Hash160Str, None] = Hash160Str.from_address(wallet_address_or_scripthash)
             else:
-                self.wallet_scripthash = wallet_address_or_scripthash
-                self.wallet_address = wallet_address_or_scripthash.to_address()
+                self.wallet_scripthash = Hash160Str.from_str(wallet_address_or_scripthash)
+                self.wallet_address = wallet_address_or_scripthash.to_address() if wallet_address_or_scripthash else None
             self.signers: List[Signer] = to_list(signers) or [Signer(self.wallet_scripthash)]
         else:
             self.wallet_address = None
@@ -129,7 +128,7 @@ class FairyClient:
         self.verify_SSL: bool = verify_SSL
         self.requests_timeout: Union[int, None] = requests_timeout
         self.hook_function_after_rpc_call = hook_function_after_rpc_call
-        self.default_fairy_wallet_scripthash = default_fairy_wallet_scripthash
+        self.default_fairy_wallet_scripthash = Hash160Str.from_str(default_fairy_wallet_scripthash)
         if verify_SSL is False:
             print('WARNING: Will ignore SSL certificate errors!')
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -152,14 +151,14 @@ class FairyClient:
         :param wallet_address: address of your wallet (starting with 'N'); "NVbGwMfRQVudTjWAUJwj4K68yyfXjmgbPp", or scripthash
         :param signers: Signer(wallet_scripthash or wallet_address). By Signer you can assign WitnessScope
         """
-        if type(wallet_address) is Hash160Str:
-            wallet_scripthash = wallet_address
-            self.wallet_scripthash = wallet_address
-            self.wallet_address = Hash160Str.to_address(wallet_scripthash)
-        else:
+        if wallet_address.startswith('N'):
             self.wallet_address: str = wallet_address
             wallet_scripthash = Hash160Str.from_address(wallet_address)
             self.wallet_scripthash: Hash160Str = wallet_scripthash
+        else:  # is scripthash
+            wallet_scripthash = Hash160Str.from_str(wallet_address)
+            self.wallet_scripthash = wallet_scripthash
+            self.wallet_address = Hash160Str.to_address(wallet_scripthash)
         self.signers: List[Signer] = to_list(signers) or [Signer(wallet_scripthash)]
 
     @staticmethod
@@ -249,8 +248,8 @@ class FairyClient:
         """
         return self.meta_rpc_method("sendrawtransaction", [transaction], relay=False)
     
-    def getrawtransaction(self, transaction_hash: Hash256Str, verbose: bool = False):
-        return self.meta_rpc_method("getrawtransaction", [str(transaction_hash), verbose], relay=False)
+    def getrawtransaction(self, transaction_hash: Union[str, Hash256Str], verbose: bool = False):
+        return self.meta_rpc_method("getrawtransaction", [Hash256Str.from_str(transaction_hash).to_str(), verbose], relay=False)
     
     def calculatenetworkfee(self, txBase64Str):
         return self.meta_rpc_method("calculatenetworkfee", [txBase64Str], relay=False)
@@ -436,10 +435,11 @@ class FairyClient:
             return cls.parse_param(param.value)
         raise ValueError(f'Unable to handle param {param} with type {type_param}')
     
-    def invokefunction_of_any_contract(self, scripthash: Hash160Str, operation: str,
+    def invokefunction_of_any_contract(self, scripthash: Union[str, Hash160Str], operation: str,
                                        params: List[Union[List, str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> Any:
+        scripthash = Hash160Str.from_str(scripthash)
         fairy_session = fairy_session or self.fairy_session
         params = params or []
         signers = to_list(signers or self.signers)
@@ -479,6 +479,7 @@ class FairyClient:
                    fairy_session: str = None):
         """
         :param call_arguments: [ [contract_scripthash: Hash160Str, operation: str, args[] ], [operation, args[] ], [operation] ]
+            Use Hash160Str and do not input str for contract_scripthash, because it can be recognized as operation str.
         """
         fairy_session = fairy_session or self.fairy_session
         assert fairy_session  # only supports sessioned calls for now
@@ -487,7 +488,7 @@ class FairyClient:
             print(f'{fairy_session}::{call_arguments} relay={relay} {signers}')
     
         parsed_call_arguments = [  # [ [contract_scripthash: Hash160Str, operation: str, args[] ] ]
-            [
+            [# [ contract_scripthash: Hash160Str, operation: str, args[] ] or [ operation: str, args[] ]
                 str(call[0]) if type(call[0]) is Hash160Str else str(self.contract_scripthash),
                 call[1] if type(call[0]) is Hash160Str else call[0],
                 list(map(lambda param: self.parse_param(param), call[-1]) if len(call) >= 2 else [])
@@ -523,7 +524,7 @@ class FairyClient:
         Get a transaction already existing on chain, and re-execute its script
         :param signers: if None, use signers of the specified transaction
         """
-        tx_hash: Hash256Str = Hash256Str(tx_hash)
+        tx_hash: Hash256Str = Hash256Str.from_str(tx_hash)
         tx = self.await_confirmed_transaction(tx_hash, True)
         signers = signers or [Signer.from_dict(s) for s in tx['signers']]
         return self.invokescript(tx['script'], signers=signers, relay=relay, fairy_session=fairy_session)
@@ -531,7 +532,7 @@ class FairyClient:
     def get_block_count(self) -> int:
         return self.meta_rpc_method("getblockcount", [])
     
-    def sendfrom(self, asset_id: Hash160Str, from_address: str, to_address: str, value: int,
+    def sendfrom(self, asset_id: Union[str, Hash160Str], from_address: Union[str, Hash160Str], to_address: str, value: int,
                  signers: List[Signer] = None):
         """
 
@@ -545,38 +546,38 @@ class FairyClient:
         """
         signers = to_list(signers or self.signers)
         return self.meta_rpc_method('sendfrom', [
-            asset_id.to_str(),
-            from_address, to_address, value,
+            Hash160Str.from_str(asset_id).to_str(),
+            Hash160Str.from_str(from_address).to_str(), Hash160Str.from_str(to_address).to_str(), value,
             signers
         ])
     
-    def sendtoaddress(self, asset_id: Hash160Str, address, value: int):
+    def sendtoaddress(self, asset_id: Union[str, Hash160Str], address, value: int):
         return self.meta_rpc_method('sendtoaddress', [
-            asset_id.string, address, value,
+            Hash160Str.from_str(asset_id).to_str(), address, value,
         ])
     
-    def send_neo_to_address(self, to_address: Hash160Str, value: int):
-        return self.sendtoaddress(NeoAddress, to_address, value)
+    def send_neo_to_address(self, to_address: Union[str, Hash160Str], value: int):
+        return self.sendtoaddress(NeoAddress, Hash160Str.from_str(to_address), value)
     
-    def send_gas_to_address(self, to_address: Hash160Str, value: int):
-        return self.sendtoaddress(GasAddress, to_address, value)
+    def send_gas_to_address(self, to_address: Union[str, Hash160Str], value: int):
+        return self.sendtoaddress(GasAddress, Hash160Str.from_str(to_address), value)
     
-    def getwalletbalance(self, asset_id: Hash160Str) -> int:
-        return int(self.meta_rpc_method('getwalletbalance', [asset_id.to_str()])['balance'])
+    def getwalletbalance(self, asset_id: Union[str, Hash160Str]) -> int:
+        return int(self.meta_rpc_method('getwalletbalance', [Hash160Str.from_str(asset_id).to_str()])['balance'])
     
-    def get_neo_balance(self, owner: Hash160Str = None, with_print=False) -> int:
-        return self.invokefunction_of_any_contract(NeoAddress, 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
+    def get_neo_balance(self, owner: Union[str, Hash160Str] = None, with_print=False) -> int:
+        return self.invokefunction_of_any_contract(NeoAddress, 'balanceOf', params=[Hash160Str.from_str(owner) or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(NeoToken().hash))
 
-    def get_gas_balance(self, owner: Hash160Str = None, with_print=False) -> int:
-        return self.invokefunction_of_any_contract(GasAddress, 'balanceOf', params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
+    def get_gas_balance(self, owner: Union[str, Hash160Str] = None, with_print=False) -> int:
+        return self.invokefunction_of_any_contract(GasAddress, 'balanceOf', params=[Hash160Str.from_str(owner) or self.wallet_scripthash], relay=False, with_print=with_print)
         # return self.getwalletbalance(Hash160Str.from_UInt160(GasToken().hash))
     
-    def get_nep17token_balance(self, token_address: Hash160Str, owner: Hash160Str = None, with_print=False):
-        return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[owner or self.wallet_scripthash], relay=False, with_print=with_print)
+    def get_nep17token_balance(self, token_address: Union[str, Hash160Str], owner: Union[str, Hash160Str] = None, with_print=False):
+        return self.invokefunction_of_any_contract(Hash160Str.from_str(token_address), "balanceOf", params=[Hash160Str.from_str(owner) or self.wallet_scripthash], relay=False, with_print=with_print)
 
-    def get_nep11token_balance(self, token_address: Hash160Str, tokenId: Union[bytes, str, int], owner: Hash160Str = None, with_print=False):
-        return self.invokefunction_of_any_contract(token_address, "balanceOf", params=[owner or self.wallet_scripthash, tokenId], relay=False, with_print=with_print)
+    def get_nep11token_balance(self, token_address: Union[str, Hash160Str], tokenId: Union[bytes, str, int], owner: Union[str, Hash160Str] = None, with_print=False):
+        return self.invokefunction_of_any_contract(Hash160Str.from_str(token_address), "balanceOf", params=[Hash160Str.from_str(owner) or self.wallet_scripthash, tokenId], relay=False, with_print=with_print)
 
     b"""
     Fairy features below! Mount your neo-cli RpcServer with
@@ -765,15 +766,15 @@ class FairyClient:
         '''
         return self.meta_rpc_method('getmanyblocks', indexes_or_hashes)
 
-    def get_contract(self, scripthash: Hash160Str = None, fairy_session: str = None):
-        scripthash = scripthash or self.contract_scripthash
+    def get_contract(self, scripthash: Union[str, Hash160Str] = None, fairy_session: str = None):
+        scripthash = Hash160Str.from_str(scripthash) or self.contract_scripthash
         if not scripthash:
             raise ValueError("No contract scripthash specified!")
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("getcontract", [fairy_session, scripthash])
 
-    def save_nef_manifest(self, scripthash: Hash160Str = None, nef_path_and_filename: str = None, fairy_session: str = None, auto_dumpnef=True) -> None:
-        scripthash = scripthash or self.contract_scripthash
+    def save_nef_manifest(self, scripthash: Union[str, Hash160Str] = None, nef_path_and_filename: str = None, fairy_session: str = None, auto_dumpnef=True) -> None:
+        scripthash = Hash160Str.from_str(scripthash) or self.contract_scripthash
         contract_state = self.get_contract(scripthash, fairy_session=fairy_session)
         manifest = contract_state['manifest']
         nef_path_and_filename = nef_path_and_filename or f"{scripthash}.{manifest['name']}.nef"
@@ -795,8 +796,8 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("listcontracts", [fairy_session, verbose])
 
-    def await_confirmed_transaction(self, tx_hash: Hash256Str, verbose=True, wait_block_count = 2):
-        return self.meta_rpc_method('awaitconfirmedtransaction', [tx_hash, verbose, wait_block_count])
+    def await_confirmed_transaction(self, tx_hash: Union[str, Hash256Str], verbose=True, wait_block_count = 2):
+        return self.meta_rpc_method('awaitconfirmedtransaction', [Hash256Str.from_str(tx_hash), verbose, wait_block_count])
 
     @staticmethod
     def get_nef_and_manifest_from_path(nef_path_and_filename: str):
@@ -866,43 +867,43 @@ class FairyClient:
             raise ValueError(f'Unexpected input type {type(key)} {key}')
         return key
 
-    def get_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+    def get_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Union[str, Hash160Str] = None) -> Dict[str, str]:
         fairy_session = fairy_session or self.fairy_session
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("getstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key)])
 
-    def find_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+    def find_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Union[str, Hash160Str] = None) -> Dict[str, str]:
         fairy_session = fairy_session or self.fairy_session
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("findstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key)])
 
-    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Hash160Str = None) -> Dict[str, str]:
+    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Union[str, Hash160Str] = None) -> Dict[str, str]:
         """
         :param value==0 deletes the key-value pair
         """
         fairy_session = fairy_session or self.fairy_session
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("putstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
 
     def deserialize(self, data_base64encoded: Union[str, List[str]]) -> List[Any]:
         result = self.meta_rpc_method_with_raw_result('deserialize', to_list(data_base64encoded))['result']
         return [self.parse_single_item(item) for item in result]
 
-    def set_neo_balance(self, balance: Union[int, float], fairy_session: str = None, account: Hash160Str = None):
+    def set_neo_balance(self, balance: Union[int, float], fairy_session: str = None, account: Union[str, Hash160Str] = None):
         balance = int(balance)
         fairy_session = fairy_session or self.fairy_session
-        account = account or self.wallet_scripthash
+        account = Hash160Str.from_str(account) or self.wallet_scripthash
         if not account:
             raise ValueError('No account specified')
         return self.meta_rpc_method("setneobalance", [fairy_session, account, balance])
 
-    def set_gas_balance(self, balance: Union[int, float], fairy_session: str = None, account: Hash160Str = None):
+    def set_gas_balance(self, balance: Union[int, float], fairy_session: str = None, account: Union[str, Hash160Str] = None):
         balance = int(balance)
         fairy_session = fairy_session or self.fairy_session
-        account = account or self.wallet_scripthash
+        account = Hash160Str.from_str(account) or self.wallet_scripthash
         return self.meta_rpc_method("setgasbalance", [fairy_session, account, balance])
 
-    def set_nep17_balance(self, contract: Hash160Str, balance: int, fairy_session: str = None, account: Hash160Str = None, byte_prefix: int = 1):
+    def set_nep17_balance(self, contract: Union[str, Hash160Str], balance: int, fairy_session: str = None, account: Union[str, Hash160Str] = None, byte_prefix: int = 1):
         """
         We do not guarantee the success of this method.
         If the token contract is written with an unusual storage pattern,
@@ -912,8 +913,8 @@ class FairyClient:
         if byte_prefix >= 256 or byte_prefix < 0:
             raise ValueError(f'Only 0<=byte_prefix<=255 accepted. Got {byte_prefix}')
         fairy_session = fairy_session or self.fairy_session
-        account = account or self.wallet_scripthash
-        return self.meta_rpc_method("setnep17balance", [fairy_session, contract, account, balance, byte_prefix])
+        account = Hash160Str.from_str(account) or self.wallet_scripthash
+        return self.meta_rpc_method("setnep17balance", [fairy_session, Hash160Str.from_str(contract), account, balance, byte_prefix])
 
     def get_many_unclaimed_gas(self, accounts: Union[Hash160Str, List[Hash160Str]], fairy_session: str = None):
         accounts = to_list(accounts)
@@ -925,15 +926,15 @@ class FairyClient:
     Fairy debugger features!
     """
     """debug info and file names"""
-    def set_debug_info(self, nefdbgnfo: bytes, dumpnef_content: str, contract_scripthash: Hash160Str = None) -> Dict[Hash160Str, bool]:
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def set_debug_info(self, nefdbgnfo: bytes, dumpnef_content: str, contract_scripthash: Union[str, Hash160Str] = None) -> Dict[Hash160Str, bool]:
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return {Hash160Str(k): v for k, v in self.meta_rpc_method("setdebuginfo", [contract_scripthash, self.all_to_base64(nefdbgnfo), dumpnef_content]).items()}
 
     def list_debug_info(self) -> List[Hash160Str]:
         return [Hash160Str(i) for i in self.meta_rpc_method("listdebuginfo", [])]
 
-    def list_filenames_of_contract(self, contract_scripthash: Hash160Str = None) -> List[Hash160Str]:
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def list_filenames_of_contract(self, contract_scripthash: Union[str, Hash160Str] = None) -> List[Hash160Str]:
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("listfilenamesofcontract", [contract_scripthash])
 
     def delete_debug_info(self, contract_scripthashes: Union[List[Hash160Str], Hash160Str]) -> Dict[Hash160Str, bool]:
@@ -944,43 +945,43 @@ class FairyClient:
         return {Hash160Str(k): v for k, v in result.items()}
 
     """breakpoints"""
-    def set_assembly_breakpoints(self, instruction_pointers: Union[int, List[int]], contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def set_assembly_breakpoints(self, instruction_pointers: Union[int, List[int]], contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         if type(instruction_pointers) is int:
             return self.meta_rpc_method("setassemblybreakpoints", [contract_scripthash, instruction_pointers])
         else:
             return self.meta_rpc_method("setassemblybreakpoints", [contract_scripthash] + list(instruction_pointers))
 
-    def list_assembly_breakpoints(self, contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def list_assembly_breakpoints(self, contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("listassemblybreakpoints", [contract_scripthash])
 
-    def delete_assembly_breakpoints(self, instruction_pointers: Union[int, List[int]] = None, contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def delete_assembly_breakpoints(self, instruction_pointers: Union[int, List[int]] = None, contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         instruction_pointers = [] if instruction_pointers is None else instruction_pointers
         if type(instruction_pointers) is int:
             return self.meta_rpc_method("deleteassemblybreakpoints", [contract_scripthash, instruction_pointers])
         else:
             return self.meta_rpc_method("deleteassemblybreakpoints", [contract_scripthash] + list(instruction_pointers))
 
-    def set_source_code_breakpoint(self, filename: str, line_num: int, contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def set_source_code_breakpoint(self, filename: str, line_num: int, contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("setsourcecodebreakpoints", [contract_scripthash, filename, line_num])
 
-    def set_source_code_breakpoints(self, filename_and_line_num: List[Union[str, int]], contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def set_source_code_breakpoints(self, filename_and_line_num: List[Union[str, int]], contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("setsourcecodebreakpoints", [contract_scripthash] + filename_and_line_num)
 
-    def list_source_code_breakpoints(self, contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def list_source_code_breakpoints(self, contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("listsourcecodebreakpoints", [contract_scripthash])
 
-    def delete_source_code_breakpoint(self, filename: str, line_num: int, contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def delete_source_code_breakpoint(self, filename: str, line_num: int, contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         return self.meta_rpc_method("deletesourcecodebreakpoints", [contract_scripthash, filename, line_num])
 
-    def delete_source_code_breakpoints(self, filename_and_line_num: List[Union[str, int]] = None, contract_scripthash: Hash160Str = None):
-        contract_scripthash = contract_scripthash or self.contract_scripthash
+    def delete_source_code_breakpoints(self, filename_and_line_num: List[Union[str, int]] = None, contract_scripthash: Union[str, Hash160Str] = None):
+        contract_scripthash = Hash160Str.from_str(contract_scripthash) or self.contract_scripthash
         filename_and_line_num = filename_and_line_num or []
         return self.meta_rpc_method("deletesourcecodebreakpoints", [contract_scripthash] + filename_and_line_num)
 
@@ -992,15 +993,15 @@ class FairyClient:
     def list_debug_snapshots(self):
         return self.meta_rpc_method("listdebugsnapshots", [])
 
-    def get_method_by_instruction_pointer(self, instruction_pointer: int, scripthash: Hash160Str = None):
-        scripthash = scripthash or self.contract_scripthash
+    def get_method_by_instruction_pointer(self, instruction_pointer: int, scripthash: Union[str, Hash160Str] = None):
+        scripthash = Hash160Str.from_str(scripthash) or self.contract_scripthash
         return self.meta_rpc_method("getmethodbyinstructionpointer", [scripthash, instruction_pointer])
 
-    def debug_any_function_with_session(self, scripthash: Hash160Str, operation: str,
+    def debug_any_function_with_session(self, scripthash: Union[str, Hash160Str], operation: str,
                                        params: List[Union[str, int, dict, Hash160Str, UInt160, bytes, bytearray]] = None,
                                        signers: Union[Signer, List[Signer]] = None, relay: bool = None, do_not_raise_on_result=False,
                                        with_print=True, fairy_session: str = None) -> RpcBreakpoint:
-        scripthash = scripthash or self.contract_scripthash
+        scripthash = Hash160Str.from_str(scripthash) or self.contract_scripthash
         fairy_session = fairy_session or self.fairy_session
         if self.with_print and with_print:
             if fairy_session:
