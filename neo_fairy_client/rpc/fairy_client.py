@@ -248,7 +248,7 @@ class FairyClient:
         """
         return self.meta_rpc_method("sendrawtransaction", [transaction], relay=False)
     
-    def getrawtransaction(self, transaction_hash: Union[str, Hash256Str], verbose: bool = False):
+    def getrawtransaction(self, transaction_hash: Union[str, int, Hash256Str], verbose: bool = False):
         return self.meta_rpc_method("getrawtransaction", [Hash256Str.from_str_or_int(transaction_hash).to_str(), verbose], relay=False)
     
     def calculatenetworkfee(self, txBase64Str):
@@ -518,7 +518,7 @@ class FairyClient:
                 relay=relay)
         return result
     
-    def replay_transaction(self, tx_hash: Union[str, Hash256Str], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
+    def replay_transaction(self, tx_hash: Union[str, int, Hash256Str], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                            fairy_session: str = None) -> Any:
         """
         Get a transaction already existing on chain, and re-execute its script
@@ -796,7 +796,7 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("listcontracts", [fairy_session, verbose])
 
-    def await_confirmed_transaction(self, tx_hash: Union[str, Hash256Str], verbose=True, wait_block_count = 2):
+    def await_confirmed_transaction(self, tx_hash: Union[str, int, Hash256Str], verbose=True, wait_block_count = 2):
         return self.meta_rpc_method('awaitconfirmedtransaction', [Hash256Str.from_str_or_int(tx_hash), verbose, wait_block_count])
 
     @staticmethod
