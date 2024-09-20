@@ -129,7 +129,8 @@ class Hash256Str(HashStr):
             s: Hash256Str
             return s
         if type(s) is int:
-            return cls(hex(s))
+            s: str = '0x' + hex(s)[2:].zfill(40)
+            return cls(s)
         if not s:
             return None
         return cls(s)
@@ -173,7 +174,8 @@ class Hash160Str(HashStr):
             s: Hash160Str
             return s
         if type(s) is int:
-            return cls(hex(s))
+            s: str = '0x' + hex(s)[2:].zfill(40)
+            return cls(s)
         if not s:
             return None
         if s.startswith('N'):
