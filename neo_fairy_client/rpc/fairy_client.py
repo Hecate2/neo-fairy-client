@@ -1,4 +1,4 @@
-from typing import List, Union, Dict, Any, Callable
+from typing import List, Tuple, Union, Dict, Any, Callable
 from enum import Enum
 import base64
 import json
@@ -802,7 +802,7 @@ class FairyClient:
         return self.meta_rpc_method('awaitconfirmedtransaction', [Hash256Str.from_str_or_int(tx_hash), verbose, wait_block_count])
 
     @staticmethod
-    def get_nef_and_manifest_from_path(nef_path_and_filename: str):
+    def get_nef_and_manifest_from_path(nef_path_and_filename: str) -> Tuple[bytes, str]:
         path, nef_filename = os.path.split(nef_path_and_filename)  # '../NFTLoan/NFTLoan/bin/sc', 'NFTFlashLoan.nef'
         assert nef_filename.endswith('.nef')
         with open(nef_path_and_filename, 'rb') as f:

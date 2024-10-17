@@ -239,11 +239,11 @@ class WitnessScope(Enum):
 
 
 class Signer:
-    def __init__(self, account: Union[Hash160Str, str], scopes: WitnessScope = WitnessScope.CalledByEntry,
+    def __init__(self, account: Union[Hash160Str, str, int], scopes: WitnessScope = WitnessScope.CalledByEntry,
                  allowedcontracts: Union[List[Hash160Str], Hash160Str] = None,
                  allowedgroups: Union[List[PublicKeyStr], PublicKeyStr] = None,
                  rules: Union[List[dict], dict] = None):
-        self.account: Hash160Str = account if type(account) is Hash160Str else Hash160Str.from_address(account)
+        self.account: Hash160Str = Hash160Str.from_str_or_int(account)
         self.scopes: WitnessScope = scopes
         if self.scopes == WitnessScope.CustomContracts and not allowedcontracts:
             print('WARNING! You did not allow any contract to use your signature.')
