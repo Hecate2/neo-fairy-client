@@ -112,14 +112,16 @@ class Hash256Str(HashStr):
     0x59916d8c2fc5feb06b77aec289ac34b49ae3bccb1f88fe64ea5172c79fc1af05
     """
 
-    def __init__(self, string: Union[str, UInt256]):
+    def __init__(self, string: Union[int, str, UInt256]):
         # assert string.startswith('0x')
         if type(string) is UInt256:
-            string = bytearray(string._data)
+            string: bytearray = bytearray(string._data)
             string.reverse()
-            string = string.hex()
+            string: str = string.hex()
+        if type(string) is int:
+            string: str = '0x' + hex(string)[2:].zfill(64)
         if len(string) == 64:
-            string = '0x' + string
+            string: str = '0x' + string
         assert len(string) == 66
         super().__init__(string)
     
@@ -146,8 +148,8 @@ class Hash256Str(HashStr):
     def zero(cls):
         return cls(UInt256.zero())
 
-    def to_UInt256(self):
-        return UInt256.from_string(self.string)
+    def to_UInt256(self) -> UInt256:
+        return UInt256.from_str_or_int(self.string)
 
 
 class Hash160Str(HashStr):
@@ -155,16 +157,18 @@ class Hash160Str(HashStr):
     0xf61eebf573ea36593fd43aa150c055ad7906ab83
     """
     
-    def __init__(self, string: Union[str, UInt160]):
+    def __init__(self, string: Union[int, str, UInt160]):
         # assert string.startswith('0x')
         if type(string) is UInt160:
-            string = bytearray(string._data)
+            string: bytearray = bytearray(string._data)
             string.reverse()
-            string = string.hex()
+            string: str = string.hex()
+        if type(string) is int:
+            string: str = '0x' + hex(string)[2:].zfill(40)
         if len(string) == 40:
-            string = '0x' + string
+            string: str = '0x' + string
         if string.startswith('N'):
-            string = Hash160Str.from_address(string)
+            string: str = Hash160Str.from_address(string).to_str()
         assert len(string) == 42
         super().__init__(string)
     
@@ -197,8 +201,8 @@ class Hash160Str(HashStr):
     def zero(cls):
         return cls(UInt160.zero())
 
-    def to_UInt160(self):
-        return UInt160.from_string(self.string)
+    def to_UInt160(self) -> UInt160:
+        return UInt160.from_str_or_int(self.string)
     
     def to_address(self):
         return Account.script_hash_to_address(self.to_UInt160())
