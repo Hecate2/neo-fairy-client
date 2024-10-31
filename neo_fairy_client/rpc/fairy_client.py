@@ -685,7 +685,7 @@ class FairyClient:
     def new_snapshots_from_current_system(self, fairy_sessions: Union[List[str], str] = None):
         fairy_sessions = fairy_sessions or self.fairy_session
         if fairy_sessions is None:
-            raise ValueError('No RpcServer session specified')
+            raise ValueError('No Fairy session specified')
         if type(fairy_sessions) is str:
             return self.meta_rpc_method("newsnapshotsfromcurrentsystem", [fairy_sessions])
         return self.meta_rpc_method("newsnapshotsfromcurrentsystem", fairy_sessions)
@@ -715,7 +715,7 @@ class FairyClient:
     def get_snapshot_timestamp(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
         fairy_sessions = fairy_sessions or self.fairy_session
         if fairy_sessions is None:
-            raise ValueError('No RpcServer session specified')
+            raise ValueError('No Fairy session specified')
         return self.meta_rpc_method("getsnapshottimestamp", to_list(fairy_sessions))
 
     def set_snapshot_random(self, designated_random: Union[int, None], fairy_session: str = None) -> Dict[str, Union[int, None]]:
@@ -737,7 +737,17 @@ class FairyClient:
         for k, v in result.items():
             result[k] = None if not v else int(v)
         return result
-
+    
+    def set_snapshot_checkwitness(self, always_return_true: bool = True, fairy_session: str = None) -> Dict[str, int]:
+        fairy_session = fairy_session or self.fairy_session
+        return self.meta_rpc_method("setsnapshotcheckwitness", [fairy_session, always_return_true])
+    
+    def get_snapshot_checkwitness(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
+        fairy_sessions = fairy_sessions or self.fairy_session
+        if fairy_sessions is None:
+            raise ValueError('No Fairy session specified')
+        return self.meta_rpc_method("getsnapshotcheckwitness", to_list(fairy_sessions))
+    
     def virtual_deploy(self, nef: bytes, manifest: str, data: Any = None, signers: Union[Signer, List[Signer]] = None, fairy_session: str = None) -> Hash160Str:
         """
         
