@@ -61,9 +61,9 @@ NEO balance of zero address: 1000000000
 
 ##### Step 2.2: I just want to interact with the real mainnet and testnet...
 
-**DO NOT** set the `fairy_session` string for you `FairyClient`, or set it to `None`. Fairy will play real transactions without fairy session. Set `function_default_relay=True` in `FairyClient` or `relay=True` in a single `invokefunction` to automatically relay the transaction. 
+**DO NOT** set the `fairy_session` string for your `FairyClient`, or set it to `None`. Fairy will play real transactions without fairy session. Set `function_default_relay=True` in `FairyClient` or `relay=True` in a single `invokefunction` to automatically relay the transaction. 
 
-**BE CAREFUL: ** By default, Fairy does interact with the real blockchain and relay transactions. **Do not use a wallet with real assets when you just want a test!**
+**BE CAREFUL**:  By default, Fairy does interact with the real blockchain and relay transactions. **Do not use a wallet with real assets when you just want a test!**
 
 Sometimes you may want to actually relay something after fairy tests. In such cases, set `confirm_relay_to_blockchain=True` in `FairyClient` to prevent automatic relaying as the final safety belt. 
 
