@@ -702,7 +702,7 @@ class FairyClient:
     def copy_snapshot(self, old_name: str, new_name: str):
         return self.meta_rpc_method("copysnapshot", [old_name, new_name])
     
-    def set_snapshot_timestamp(self, timestamp_ms: Union[int, None] = None, fairy_session: str = None) -> Dict[str, int]:
+    def set_snapshot_timestamp(self, timestamp_ms: Union[int, None] = None, fairy_session: str = None) -> Dict[str, Union[int, None]]:
         """
         
         :param timestamp_ms: use None to reset to current block time
@@ -712,7 +712,7 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("setsnapshottimestamp", [fairy_session, timestamp_ms])
     
-    def get_snapshot_timestamp(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
+    def get_snapshot_timestamp(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, Union[int, None]]:
         fairy_sessions = fairy_sessions or self.fairy_session
         if fairy_sessions is None:
             raise ValueError('No Fairy session specified')
@@ -728,7 +728,7 @@ class FairyClient:
             result[k] = None if result[k] is None else int(result[k])
         return result
 
-    def get_snapshot_random(self, fairy_sessions: Union[List[str], str] = None) -> Dict[str, int]:
+    def get_snapshot_random(self, fairy_sessions: Union[List[str], str] = None) -> Dict[str, Union[int, None]]:
         fairy_sessions = fairy_sessions or self.fairy_session
         if type(fairy_sessions) is str:
             result = self.meta_rpc_method("getsnapshotrandom", [fairy_sessions])
@@ -738,11 +738,11 @@ class FairyClient:
             result[k] = None if not v else int(v)
         return result
     
-    def set_snapshot_checkwitness(self, always_return_true: bool = True, fairy_session: str = None) -> Dict[str, int]:
+    def set_snapshot_checkwitness(self, always_return_true: bool = True, fairy_session: str = None) -> Dict[str, bool]:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("setsnapshotcheckwitness", [fairy_session, always_return_true])
     
-    def get_snapshot_checkwitness(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, int]:
+    def get_snapshot_checkwitness(self, fairy_sessions: Union[List[str], str, None] = None) -> Dict[str, Union[bool, None]]:
         fairy_sessions = fairy_sessions or self.fairy_session
         if fairy_sessions is None:
             raise ValueError('No Fairy session specified')
