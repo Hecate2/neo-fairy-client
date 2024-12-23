@@ -587,6 +587,9 @@ class FairyClient:
     before using the following methods!
     """
 
+    def hello_fairy(self) -> dict:
+        return self.meta_rpc_method("hellofairy", [])
+
     def open_default_fairy_wallet(self, path: str, password: str) -> dict:
         if self.verbose_return:
             open_wallet_result, _, _ = self.meta_rpc_method("opendefaultfairywallet", [path, password])
@@ -785,7 +788,7 @@ class FairyClient:
         fairy_session = fairy_session or self.fairy_session
         return self.meta_rpc_method("getcontract", [fairy_session, scripthash])
 
-    def save_nef_manifest(self, scripthash: Union[str, int, Hash160Str] = None, nef_path_and_filename: str = None, fairy_session: str = None, auto_dumpnef=True) -> None:
+    def save_nef_manifest(self, scripthash: Union[str, int, Hash160Str] = None, nef_path_and_filename: str = None, fairy_session: str = None, auto_dumpnef=True) -> Tuple[bytes, str]:
         scripthash = Hash160Str.from_str_or_int(scripthash) or self.contract_scripthash
         contract_state = self.get_contract(scripthash, fairy_session=fairy_session)
         manifest = contract_state['manifest']
@@ -797,12 +800,14 @@ class FairyClient:
             nef_filename = nef_filename[:-len(".manifest.json")]
         with open(os.path.join(path, f'{nef_filename}.manifest.json'), 'w') as f:
             f.write(json.dumps(manifest))
-        nef_file = contract_state['nefFile']
+        nef_file: str = contract_state['nefFile']
+        nef_file: bytes = base64.b64decode(nef_file)
         nef_path_and_filename = os.path.join(path, f'{nef_filename}.nef')
         with open(nef_path_and_filename, 'wb') as f:
-            f.write(base64.b64decode(nef_file))
+            f.write(nef_file)
         if auto_dumpnef:
             print(f'dumpnef {nef_filename}', os.popen(f'dumpnef {nef_path_and_filename} > {nef_path_and_filename}.txt').read())
+        return nef_file, manifest
 
     def list_contracts(self, verbose = False, fairy_session: str = None) -> Dict[str, Any]:
         fairy_session = fairy_session or self.fairy_session
