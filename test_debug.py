@@ -27,6 +27,7 @@ print(client.list_filenames_of_contract())
 assert client.list_debug_info() == [client.contract_scripthash]
 
 client.delete_source_code_breakpoints()
+client.delete_assembly_breakpoints()
 
 print(client.set_assembly_breakpoints(0))
 print(client.set_assembly_breakpoints(3))

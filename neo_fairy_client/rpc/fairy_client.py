@@ -15,6 +15,7 @@ from neo_fairy_client.utils import NamedCurveHash, defaultFairyWalletScriptHash
 
 from neo_fairy_client.utils import UInt160, UInt256
 from neo_fairy_client.utils import VMState, WitnessScope
+from neo_fairy_client.utils.oracle import OracleRequest, OracleResponseCode
 
 RequestExceptions = (
     requests.RequestException,
@@ -517,6 +518,35 @@ class FairyClient:
                 [script_base64_encoded, list(map(lambda signer: signer.to_dict(), signers))],
                 relay=relay)
         return result
+    
+    def oracle_finish(self, oracle_result: Union[str, bytes], oracle_request_id: Union[OracleRequest, Dict, List, int, None] = None,
+                      oracle_response_code: Union[OracleResponseCode, int] = OracleResponseCode.Success,
+                      debug = False, relay: bool = None, fairy_session: str = None) -> Any:
+        """
+        :param oracle_result: Do not have it b64encode-ed, but have it filtered with json path.
+        :param oracle_request_id:
+        :param oracle_response_code:
+        :param relay:
+        :param fairy_session:
+        :return:
+        """
+        fairy_session = fairy_session or self.fairy_session
+        if type(oracle_result) is str:
+            oracle_result: bytes = oracle_result.encode()
+        oracle_result: str = base64.b64encode(oracle_result).decode()
+        if oracle_request_id is None:
+            oracle_request_id = OracleRequest(self.previous_raw_result['result']['oraclerequests'][0]).request_id
+        if type(oracle_request_id) is list or type(oracle_request_id) is dict:
+            oracle_request_id: OracleRequest = OracleRequest(oracle_request_id)
+        if type(oracle_request_id) is OracleRequest:
+            oracle_request_id: int = oracle_request_id.request_id
+        if type(oracle_response_code) is OracleResponseCode:
+            oracle_response_code: int = oracle_response_code.value
+        result = self.meta_rpc_method_with_raw_result(
+            "oraclefinish", [fairy_session, relay or (relay is None and self.function_default_relay),
+            oracle_request_id, oracle_response_code, oracle_result, debug])
+        return result
+        
     
     def replay_transaction(self, tx_hash: Union[str, int, Hash256Str], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                            fairy_session: str = None, debug = False) -> Any:
