@@ -541,12 +541,19 @@ class FairyClient:
         if type(oracle_request_id) is OracleRequest:
             oracle_request_id: int = oracle_request_id.request_id
         if type(oracle_response_code) is OracleResponseCode:
+            oracle_response_code.value: int
             oracle_response_code: int = oracle_response_code.value
         result = self.meta_rpc_method_with_raw_result(
             "oraclefinish", [fairy_session, relay or (relay is None and self.function_default_relay),
             oracle_request_id, oracle_response_code, oracle_result, debug])
         return result
-        
+    
+    def oracle_json_path(self, json_input: Union[str, Dict], json_path: str) -> bytes:
+        if type(json_input) is dict:
+            json_input: str = json.dumps(json_input, separators=(',', ':'))
+        result: Dict[str, str] = self.meta_rpc_method_with_raw_result(
+            "oraclejsonpath", [json_input, json_path])
+        return base64.b64decode(result['result'])
     
     def replay_transaction(self, tx_hash: Union[str, int, Hash256Str], signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                            fairy_session: str = None, debug = False) -> Any:
