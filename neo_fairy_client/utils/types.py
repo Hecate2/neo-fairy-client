@@ -131,7 +131,7 @@ class Hash256Str(HashStr):
             s: Hash256Str
             return s
         if type(s) is int:
-            s: str = '0x' + hex(s)[2:].zfill(40)
+            s: str = '0x' + hex(s)[2:].zfill(64)
             return cls(s)
         if not s:
             return None
