@@ -10,9 +10,53 @@ A crude JavaScript version is available at https://github.com/Hecate2/neo-fairy-
 
 **Python >= 3.8 required!** Some steps in this tutorial is to help you understand the details about how Fairy works. In actual combat, you can read the source codes of `FairyClient` and enjoy many automatic conveniences that Fairy offers. 
 
-##### Extremely fast but close-to-base version:
+##### Extremely fast version:
 
-Visit [test_nftloan.py](test_nftloan.py) as a sample of usage. The tested contract can be found at https://github.com/Hecate2/NFTLoan . Contract `AnyUpdateShortSafe` is an old-fashioned contract for testing, deployed on testnet T4 (which has been deprecated; we now use testnet T5), with source codes at https://github.com/Hecate2/AnyUpdate/ . You can skip using `AnyUpdate` by calling the RPC method `virtualdeploy`. 
+Let's simply simulate transactions collateralizing NEO to neoburger, and then redeeming them. Remember to launch [neo-fairy-test](https://github.com/Hecate2/neo-fairy-test/) at http://localhost:16868 before you start.
+
+```python
+from neo_fairy_client import FairyClient, defaultFairyWalletScriptHash, NeoAddress, GasAddress
+
+bneo = 0x48c40d4666f93408be1bef038b6722404d9a4c2a
+c = FairyClient(target_url='http://localhost:16868', fairy_session='neoburger', contract_scripthash=bneo, wallet_address_or_scripthash=defaultFairyWalletScriptHash)
+c.set_neo_balance(1_000, account=defaultFairyWalletScriptHash)
+assert c.invokefunction_of_any_contract(NeoAddress, 'balanceOf', [defaultFairyWalletScriptHash]) == 1_000
+c.invokefunction_of_any_contract(NeoAddress, 'transfer', [defaultFairyWalletScriptHash, bneo, 1000, None])
+assert c.invokefunction('balanceOf', [defaultFairyWalletScriptHash]) == 1000_0000_0000  # calling bNEO balance
+assert c.invokefunction_of_any_contract(NeoAddress, 'balanceOf', [defaultFairyWalletScriptHash]) == 0
+result = c.invokefunction_of_any_contract(GasAddress, 'transfer', [defaultFairyWalletScriptHash, bneo, 1_0000_0000, None])
+print(result)
+assert c.invokefunction('balanceOf', [defaultFairyWalletScriptHash]) == 0
+assert c.invokefunction_of_any_contract(NeoAddress, 'balanceOf', [defaultFairyWalletScriptHash]) == 1_000
+```
+
+Then let's also try testing and debugging some local contracts. You can go to https://github.com/neo-project/neo-devpack-dotnet/tree/master/examples/Example.SmartContract.SampleRoyaltyNEP11Token for an example contract `SampleRoyaltyNEP11Token`. Remember to compile your contract with `nccs Example.SmartContract.SampleRoyaltyNEP11Token.csproj --debug --assembly --optimize=All`. The `--debug` flag gives a debug info file with suffix `.nefdbgnfo`. neo-fairy-client utilizes this file automatically for debugging.
+
+```python
+from neo_fairy_client import FairyClient, defaultFairyWalletScriptHash, Signer
+
+c = FairyClient(target_url='http://localhost:16868', fairy_session='mint_multiple', signers=Signer(defaultFairyWalletScriptHash))
+c.set_snapshot_checkwitness(True)  # so that all CheckWitness returns True
+c.virutal_deploy_from_path(r'./bin/sc/SampleRoyaltyNEP11Token.nef')
+c.invokefunction('mint', [defaultFairyWalletScriptHash])
+assert c.invokefunction('tokensOf', [defaultFairyWalletScriptHash]) == ['\x01']
+
+c.set_snapshot_checkwitness(False)
+assert 'No Authorization!' in c.invokefunction(
+    'mint', [defaultFairyWalletScriptHash], do_not_raise_on_result=True)
+# ExecutionEngine.Assert(IsOwner() || IsMinter(), "No Authorization!");
+c.set_source_code_breakpoint('test-compiler.cs', 105)
+b = c.debug_function_with_session('mint', [defaultFairyWalletScriptHash])
+print(b)
+print(c.debug_continue())  # FAULT because the authorized minter is not you
+c.invokefunction('setMinter', [defaultFairyWalletScriptHash],
+     signers=Signer("NUuJw4C4XJFzxAvSZnFTfsNoWZytmQKXQP"))  # pretend to be the authorized owner
+assert c.invokefunction('getMinter') == defaultFairyWalletScriptHash
+c.invokefunction('mint', [defaultFairyWalletScriptHash])
+assert c.invokefunction('tokensOf', [defaultFairyWalletScriptHash]) == ['\x01', '\x02']
+```
+
+For your own complex tests, visit [test_nftloan.py](test_nftloan.py) as a more complex sample of usage. The tested contract can be found at https://github.com/Hecate2/NFTLoan . Contract `AnyUpdateShortSafe` is an old-fashioned contract for testing, deployed on testnet T4 (which has been deprecated; we now use testnet T5), with source codes at https://github.com/Hecate2/AnyUpdate/ . You can skip using `AnyUpdate` by calling the RPC method `virtualdeploy`. 
 
 ##### Step 1: Run a neo-cli with Fairy plugin!
 
@@ -41,7 +85,7 @@ If you are planning to run a public Fairy server, you need to open the Fairy wal
 
 #### Step 2.1: Mint billions of NEO and transfer them!
 
-(Of course these are just fairy NEO in the memory of your imaginiation)
+(Of course these are just fairy NEO in the memory of your imagination)
 
 ```python
 from neo_fairy_client.utils import NeoAddress
