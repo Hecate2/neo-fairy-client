@@ -921,23 +921,30 @@ class FairyClient:
             raise ValueError(f'Unexpected input type {type(key)} {key}')
         return key
 
-    def get_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Union[str, int, Hash160Str] = None) -> Dict[str, str]:
-        fairy_session = fairy_session or self.fairy_session
-        contract_scripthash = Hash160Str.from_str_or_int(contract_scripthash) or self.contract_scripthash
-        return self.meta_rpc_method("getstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key)])
-
-    def find_storage_with_session(self, key: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Union[str, int, Hash160Str] = None) -> Dict[str, str]:
-        fairy_session = fairy_session or self.fairy_session
-        contract_scripthash = Hash160Str.from_str_or_int(contract_scripthash) or self.contract_scripthash
-        return self.meta_rpc_method("findstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key)])
-
-    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], fairy_session: str = None, contract_scripthash: Union[str, int, Hash160Str] = None) -> Dict[str, str]:
+    def get_storage_with_session(self, key: Union[str, bytes, int], debug: bool = False, fairy_session: str = None, contract_scripthash: Union[str, int, Hash160Str] = None) -> Dict[str, str]:
         """
-        :param value==0 deletes the key-value pair
+        :param debug==True operates on the debug snapshot instead of the test snapshot
         """
         fairy_session = fairy_session or self.fairy_session
         contract_scripthash = Hash160Str.from_str_or_int(contract_scripthash) or self.contract_scripthash
-        return self.meta_rpc_method("putstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value)])
+        return self.meta_rpc_method("getstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), debug])
+
+    def find_storage_with_session(self, key: Union[str, bytes, int], debug: bool = False, fairy_session: str = None, contract_scripthash: Union[str, int, Hash160Str] = None) -> Dict[str, str]:
+        """
+        :param debug==True operates on the debug snapshot instead of the test snapshot
+        """
+        fairy_session = fairy_session or self.fairy_session
+        contract_scripthash = Hash160Str.from_str_or_int(contract_scripthash) or self.contract_scripthash
+        return self.meta_rpc_method("findstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), debug])
+
+    def put_storage_with_session(self, key: Union[str, bytes, int], value: Union[str, bytes, int], debug: bool = False, fairy_session: str = None, contract_scripthash: Union[str, int, Hash160Str] = None) -> Dict[str, str]:
+        """
+        :param value=="" deletes the key-value pair
+        :param debug==True operates on the debug snapshot instead of the test snapshot
+        """
+        fairy_session = fairy_session or self.fairy_session
+        contract_scripthash = Hash160Str.from_str_or_int(contract_scripthash) or self.contract_scripthash
+        return self.meta_rpc_method("putstoragewithsession", [fairy_session, contract_scripthash, self.all_to_base64(key), self.all_to_base64(value), debug])
 
     def deserialize(self, data_base64encoded: Union[str, List[str]]) -> List[Any]:
         result = self.meta_rpc_method_with_raw_result('deserialize', to_list(data_base64encoded))['result']
