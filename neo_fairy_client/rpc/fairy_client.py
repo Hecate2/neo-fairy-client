@@ -1115,6 +1115,16 @@ class FairyClient:
         result = self.meta_rpc_method_with_raw_result("debugcontinue", [fairy_session])
         return RpcBreakpoint.from_raw_result(result)
 
+    def debug_continue_to_instruction_address(self, instruction_address: int,
+            contract_scripthash: Union[str, int, Hash160Str] = None, fairy_session: str = None) -> RpcBreakpoint:
+        has_breakpoint: bool = instruction_address in self.list_assembly_breakpoints(contract_scripthash=contract_scripthash)
+        if not has_breakpoint:
+            self.set_assembly_breakpoints(instruction_address, contract_scripthash=contract_scripthash)
+        result = self.debug_continue(fairy_session=fairy_session)
+        if not has_breakpoint:
+            self.delete_assembly_breakpoints(instruction_address, contract_scripthash=contract_scripthash)
+        return result
+
     def debug_step_into(self, fairy_session: str = None) -> RpcBreakpoint:
         fairy_session = fairy_session or self.fairy_session
         result = self.meta_rpc_method_with_raw_result("debugstepinto", [fairy_session])
