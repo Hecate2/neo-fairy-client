@@ -102,12 +102,9 @@ class FairyClient:
         self.contract_scripthash: Union[Hash160Str, None] = Hash160Str.from_str_or_int(contract_scripthash)
         self.requests_session: requests.Session = requests_session
         if wallet_address_or_scripthash:
-            if wallet_address_or_scripthash.startswith('N'):
-                self.wallet_address: Union[str, None] = wallet_address_or_scripthash
-                self.wallet_scripthash: Union[Hash160Str, None] = Hash160Str.from_address(wallet_address_or_scripthash)
-            else:
-                self.wallet_scripthash = Hash160Str.from_str_or_int(wallet_address_or_scripthash)
-                self.wallet_address = wallet_address_or_scripthash.to_address() if wallet_address_or_scripthash else None
+            wallet_scripthash: Hash160Str = Hash160Str.from_str_or_int(wallet_address_or_scripthash)
+            self.wallet_address = wallet_scripthash.to_address()
+            self.wallet_scripthash = wallet_scripthash
             self.signers: List[Signer] = to_list(signers) or [Signer(self.wallet_scripthash)]
         else:
             self.wallet_address = None
@@ -1100,6 +1097,7 @@ class FairyClient:
                                   signers: Union[Signer, List[Signer]] = None, relay: bool = None,
                                   with_print = True, fairy_session: str = None) -> RpcBreakpoint:
         fairy_session = fairy_session or self.fairy_session
+        signers = signers or self.signers
         if type(script_base64_encoded) is bytes:
             script_base64_encoded: str = script_base64_encoded.decode()
         if self.with_print and with_print:
