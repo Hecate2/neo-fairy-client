@@ -4,7 +4,7 @@ from neo_fairy_client import FairyClient, NeoAddress, GasAddress, Hash160Str, Pu
 
 client = FairyClient()
 
-neo_storage: Dict[str, str] = client.find_storage_with_session(b'\x14', None, NeoAddress)
+neo_storage: Dict[str, str] = client.find_storage_with_session(b'\x14', contract_scripthash=NeoAddress)
 neo_storage: List[Tuple[Hash160Str, str]] = [
     (FairyClient.bytes_to_Hash160Str(base64.b64decode(k)[1:]), v)
     for k, v in neo_storage.items()

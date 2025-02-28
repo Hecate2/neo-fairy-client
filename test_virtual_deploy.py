@@ -16,7 +16,7 @@ borrower_wallet_path = 'user1.json'
 lender = Signer(wallet_scripthash, scopes=WitnessScope.Global)
 borrower = Signer(borrower_scripthash, scopes=WitnessScope.Global)
 
-anyupdate_short_safe_hash = Hash160Str('0x5c1068339fae89eb1a743909d0213e1d99dc5dc9')  # AnyUpdate short safe
+anyupdate_short_safe_hash = 0x5c1068339fae89eb1a743909d0213e1d99dc5dc9  # AnyUpdate short safe
 
 with open('../NFTLoan/NophtD/bin/sc/TestNophtD.nef', 'rb') as f:
     nophtd_nef_file = f.read()
